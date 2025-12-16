@@ -1,0 +1,420 @@
+#+TITLE: Sunbird RC API - Interactive Demo
+#+AUTHOR: Deden Bangkit (Akvo)
+#+DATE: 2025-12-10
+#+PROPERTY: header-args:python :session *sunbird-rc* :results output :exports both
+#+STARTUP: overview indent
+
+* Setup
+
+#+NAME: setup
+#+begin_src python
+import requests
+import json
+import pandas as pd
+from datetime import datetime
+
+# Configuration
+BASE_URL = "http://localhost:8081/api/v1"
+HEADERS = {"Content-Type": "application/json"}
+
+print("✅ Setup complete!")
+print(f"Registry API: {BASE_URL}")
+#+end_src
+
+#+RESULTS: setup
+: ✅ Setup complete!
+: Registry API: http://localhost:8081/api/v1
+
+* 1. Check Registry Health
+
+#+NAME: check-health
+#+begin_src python
+response = requests.get("http://localhost:8081/health")
+health = response.json()
+
+print(f"Status: {health['result']['healthy']}")
+print(f"Service: {health['result']['name']}")
+print("\nFull Response:")
+print(json.dumps(health, indent=2))
+#+end_src
+
+#+RESULTS: check-health
+#+begin_example
+Status: True
+Service: sunbirdrc-registry-api
+
+Full Response:
+{
+  "id": "sunbird-rc.registry.health",
+  "ver": "1.0",
+  "ets": 1765342708695,
+  "params": {
+    "resmsgid": "",
+    "msgid": "1cb49122-eba7-4bda-b393-6a8def76fdbf",
+    "err": "",
+    "status": "SUCCESSFUL",
+    "errmsg": ""
+  },
+  "responseCode": "OK",
+  "result": {
+    "name": "sunbirdrc-registry-api",
+    "healthy": true,
+    "checks": []
+  }
+}
+#+end_example
+
+* 2. List All Degree Certificates
+
+#+NAME: list-certificates
+#+begin_src python
+response = requests.get(f"{BASE_URL}/DegreeCertificate", headers=HEADERS)
+data = response.json()
+
+print(f"Total Certificates: {data['totalCount']}\n")
+
+if data['totalCount'] > 0:
+    df = pd.DataFrame(data['data'])
+    columns = ['studentName', 'studentId', 'degree', 'major', 'university', 'graduationDate', 'gpa', 'osid']
+    print("-" * 80)
+    print(df[columns])
+else:
+    print("No certificates found")
+#+end_src
+
+#+RESULTS: list-certificates
+#+begin_example
+Total Certificates: 6
+
+--------------------------------------------------------------------------------
+      studentName   studentId    degree             major           university graduationDate   gpa                                    osid
+0       Joy Ghosh  STU2024005    Master  Computer Science                  MIT     2024-05-15  4.00  1-bed4340e-0a9c-497f-9bb3-06e3dc6ef807
+1   Alice Johnson  STU2024004       PhD           Physics              Caltech     2024-06-01  3.98  1-32bd571a-bfb3-4c51-920b-b084f96fcec5
+2  Carol Martinez  STU2024006    Master      Data Science             Berkeley     2024-05-25  3.90  1-9227c26b-b8ef-405c-9e67-d2ad6bba6e76
+3      John Smith  STU2024002    Master      Data Science  Stanford University     2024-06-20  4.00  1-fa8cf434-6962-46a2-b916-59af9bc50f77
+4        Jane Doe  STU2024003  Bachelor  Computer Science                  MIT     2024-05-15  4.00  1-b625f26c-098b-4da4-b07a-2ca252c0263a
+5    Bob Williams  STU2024005  Bachelor       Mathematics              Harvard     2024-05-20  3.85  1-b0973be6-a211-4562-aea6-44020cd5aeb6
+#+end_example
+
+* 3. Create a New Degree Certificate
+
+#+NAME: create-certificate
+#+begin_src python
+new_certificate = {
+    "studentName": "Joy Ghosh",
+    "studentId": "STU2024007",
+    "degree": "Master",
+    "major": "Computer Science",
+    "university": "MIT",
+    "graduationDate": "2024-05-15",
+    "gpa": 4.00,
+    "honors": "Cum Laude",
+    "certificateNumber": "CERT-2024-CS-009"
+}
+
+response = requests.post(
+    f"{BASE_URL}/DegreeCertificate",
+    headers=HEADERS,
+    json=new_certificate
+)
+
+if response.status_code == 200:
+    result = response.json()
+    print("✅ Certificate created successfully!")
+    print(f"ID: {result['result']['DegreeCertificate']['osid']}")
+    print("\nCreated Certificate:")
+    print(json.dumps(result['result']['DegreeCertificate'], indent=2))
+else:
+    print(f"❌ Error: {response.status_code}")
+    print(response.text)
+#+end_src
+
+#+RESULTS: create-certificate
+: ❌ Error: 500
+: {"id":"sunbird-rc.registry.post","ver":"1.0","ets":1765340726500,"params":{"resmsgid":"","msgid":"2d2d18d0-07d6-43c3-99ab-8a43acf1d4c2","err":"","status":"UNSUCCESSFUL","errmsg":"java.lang.RuntimeException: org.postgresql.util.PSQLException: ERROR: duplicate key value violates unique constraint \"public_V_DegreeCertificate_certificateNumber_sqlgIdx\"\n  Detail: Key (\"certificateNumber\")=(CERT-2024-CS-009) already exists."},"responseCode":"OK","result":{}}
+
+* 4. Get a Specific Certificate by ID
+
+#+NAME: get-certificate-by-id
+#+begin_src python
+# Get the first certificate's ID
+response = requests.get(f"{BASE_URL}/DegreeCertificate")
+certificates = response.json()['data']
+
+if certificates:
+    cert_id = certificates[0]['osid']
+    print(f"Fetching certificate: {cert_id}\n")
+
+    response = requests.get(f"{BASE_URL}/DegreeCertificate/{cert_id}")
+    certificate = response.json()
+
+    print("Certificate Details:")
+    print("=" * 80)
+    print(json.dumps(certificate, indent=2))
+else:
+    print("No certificates available")
+#+end_src
+
+#+RESULTS: get-certificate-by-id
+#+begin_example
+Fetching certificate: 1-bed4340e-0a9c-497f-9bb3-06e3dc6ef807
+
+Certificate Details:
+================================================================================
+{
+  "osUpdatedAt": "2025-12-10T04:10:59.293Z",
+  "osUpdatedBy": "anonymous",
+  "university": "MIT",
+  "degree": "Master",
+  "osid": "1-bed4340e-0a9c-497f-9bb3-06e3dc6ef807",
+  "osOwner": [
+    "anonymous"
+  ],
+  "honors": "Cum Laude",
+  "studentId": "STU2024005",
+  "major": "Computer Science",
+  "graduationDate": "2024-05-15",
+  "osCreatedAt": "2025-12-10T04:10:59.293Z",
+  "certificateNumber": "CERT-2024-CS-009",
+  "studentName": "Joy Ghosh",
+  "osCreatedBy": "anonymous",
+  "gpa": 4.0
+}
+#+end_example
+
+* 5. Update a Certificate
+
+#+NAME: update-certificate
+#+begin_src python
+# Get first certificate
+response = requests.get(f"{BASE_URL}/DegreeCertificate")
+certificates = response.json()['data']
+
+if certificates:
+    cert_id = certificates[0]['osid']
+    print(f"Updating certificate: {cert_id}\n")
+
+    # Update the certificate
+    update_data = certificates[0].copy()
+    update_data['gpa'] = 4.0  # Update GPA
+    update_data['honors'] = 'Summa Cum Laude'
+
+    print(f"Changes:")
+    print(f"  - GPA: {certificates[0].get('gpa', 'N/A')} → 4.0")
+    print(f"  - Honors: {certificates[0].get('honors', 'N/A')} → Summa Cum Laude\n")
+
+    response = requests.put(
+        f"{BASE_URL}/DegreeCertificate/{cert_id}",
+        headers=HEADERS,
+        json=update_data
+    )
+
+    if response.status_code == 200:
+        print("✅ Certificate updated successfully!")
+        result = response.json()
+        print(json.dumps(result, indent=2))
+    else:
+        print(f"❌ Error: {response.status_code}")
+        print(response.text)
+else:
+    print("No certificates available to update")
+#+end_src
+
+#+RESULTS: update-certificate
+#+begin_example
+Updating certificate: 1-bed4340e-0a9c-497f-9bb3-06e3dc6ef807
+
+Changes:
+  - GPA: 4.0 → 4.0
+  - Honors: Cum Laude → Summa Cum Laude
+
+✅ Certificate updated successfully!
+{
+  "id": "sunbird-rc.registry.update",
+  "ver": "1.0",
+  "ets": 1765340740290,
+  "params": {
+    "resmsgid": "",
+    "msgid": "9b488ba0-a58b-4365-a3b8-8bc9dcd98643",
+    "err": "",
+    "status": "SUCCESSFUL",
+    "errmsg": ""
+  },
+  "responseCode": "OK"
+}
+#+end_example
+
+* 6. Search Certificates
+
+#+NAME: search-certificates
+#+begin_src python
+search_query = {
+    "filters": {
+        "degree": {"eq": "Master"}
+    }
+}
+
+response = requests.post(
+    f"{BASE_URL}/DegreeCertificate/search",
+    headers=HEADERS,
+    json=search_query
+)
+
+if response.status_code == 200:
+    results = response.json()
+    print(f"Search Query: degree = 'Master'")
+    print(f"Found {results['totalCount']} Master's degrees\n")
+
+    if results['totalCount'] > 0:
+        df = pd.DataFrame(results['data'])
+        print("Search Results:")
+        print("=" * 80)
+        print(df[['studentName', 'degree', 'major', 'university', 'gpa']].to_string(index=False))
+    else:
+        print("No results found")
+else:
+    print(f"❌ Error: {response.status_code}")
+    print(response.text)
+#+end_src
+
+#+RESULTS: search-certificates
+: Search Query: degree = 'Master'
+: Found 3 Master's degrees
+:
+: Search Results:
+: ================================================================================
+:    studentName degree            major          university  gpa
+:      Joy Ghosh Master Computer Science                 MIT  4.0
+: Carol Martinez Master     Data Science            Berkeley  3.9
+:     John Smith Master     Data Science Stanford University  4.0
+
+* 7. Bulk Create Certificates
+
+#+NAME: bulk-create-certificates
+#+begin_src python
+# Sample bulk data
+bulk_certificates = [
+    {
+        "studentName": "Alice Johnson",
+        "studentId": "STU2024004",
+        "degree": "PhD",
+        "major": "Physics",
+        "university": "Caltech",
+        "graduationDate": "2024-06-01",
+        "gpa": 3.98,
+        "honors": "Summa Cum Laude",
+        "certificateNumber": "CERT-2024-PHY-003"
+    },
+    {
+        "studentName": "Bob Williams",
+        "studentId": "STU2024005",
+        "degree": "Bachelor",
+        "major": "Mathematics",
+        "university": "Harvard",
+        "graduationDate": "2024-05-20",
+        "gpa": 3.85,
+        "honors": "Magna Cum Laude",
+        "certificateNumber": "CERT-2024-MATH-004"
+    },
+    {
+        "studentName": "Carol Martinez",
+        "studentId": "STU2024006",
+        "degree": "Master",
+        "major": "Data Science",
+        "university": "Berkeley",
+        "graduationDate": "2024-05-25",
+        "gpa": 3.90,
+        "honors": "Cum Laude",
+        "certificateNumber": "CERT-2024-DS-005"
+    }
+]
+
+print(f"Creating {len(bulk_certificates)} certificates...")
+print("=" * 80)
+
+results = []
+for i, cert in enumerate(bulk_certificates, 1):
+    response = requests.post(
+        f"{BASE_URL}/DegreeCertificate",
+        headers=HEADERS,
+        json=cert
+    )
+
+    if response.status_code == 200:
+        result = response.json()
+        osid = result['result']['DegreeCertificate']['osid']
+        print(f"✅ {i}. Created: {cert['studentName']} (ID: {osid})")
+        results.append({'status': 'success', 'osid': osid, 'name': cert['studentName']})
+    else:
+        print(f"❌ {i}. Failed: {cert['studentName']} - {response.status_code}")
+        results.append({'status': 'failed', 'name': cert['studentName'], 'error': response.text})
+
+success_count = len([r for r in results if r['status'] == 'success'])
+failed_count = len([r for r in results if r['status'] == 'failed'])
+
+print("\n" + "=" * 80)
+print(f"Summary:")
+print(f"  ✅ Created: {success_count} certificates")
+print(f"  ❌ Failed: {failed_count} certificates")
+#+end_src
+
+* 8. Delete a Certificate
+
+#+NAME: delete-certificate
+#+begin_src python
+# WARNING: This will delete a certificate!
+# Uncomment to use
+
+# cert_id_to_delete = "YOUR-CERTIFICATE-ID-HERE"
+# response = requests.delete(f"{BASE_URL}/DegreeCertificate/{cert_id_to_delete}")
+
+# if response.status_code == 200:
+#     print(f"✅ Certificate {cert_id_to_delete} deleted successfully")
+# else:
+#     print(f"❌ Error: {response.status_code}")
+#     print(response.text)
+#+end_src
+
+#+RESULTS: delete-certificate
+
+* 10. Export to CSV
+
+#+NAME: export-to-csv
+#+begin_src python
+response = requests.get(f"{BASE_URL}/DegreeCertificate")
+data = response.json()
+
+if data['totalCount'] > 0:
+    df = pd.DataFrame(data['data'])
+
+    # Select columns to export
+    export_columns = [
+        'studentName', 'studentId', 'degree', 'major',
+        'university', 'graduationDate', 'gpa', 'honors',
+        'certificateNumber', 'osid', 'osCreatedAt'
+    ]
+
+    filename = f'degree_certificates_{datetime.now().strftime("%Y%m%d_%H%M%S")}.csv'
+    df[export_columns].to_csv(filename, index=False)
+
+    print(f"✅ Exported {len(df)} certificates to: {filename}")
+    print("\nPreview (first 5 rows):")
+    print("=" * 80)
+    print(df[export_columns].head().to_string(index=False))
+else:
+    print("No certificates to export")
+#+end_src
+
+#+RESULTS: export-to-csv
+#+begin_example
+✅ Exported 6 certificates to: degree_certificates_20251210_112647.csv
+
+Preview (first 5 rows):
+================================================================================
+   studentName  studentId   degree            major          university graduationDate  gpa          honors certificateNumber                                   osid              osCreatedAt
+     Joy Ghosh STU2024005   Master Computer Science                 MIT     2024-05-15 4.00 Summa Cum Laude  CERT-2024-CS-009 1-bed4340e-0a9c-497f-9bb3-06e3dc6ef807 2025-12-10T04:10:59.293Z
+ Alice Johnson STU2024004      PhD          Physics             Caltech     2024-06-01 3.98 Summa Cum Laude CERT-2024-PHY-003 1-32bd571a-bfb3-4c51-920b-b084f96fcec5 2025-12-02T15:24:04.137Z
+Carol Martinez STU2024006   Master     Data Science            Berkeley     2024-05-25 3.90       Cum Laude  CERT-2024-DS-005 1-9227c26b-b8ef-405c-9e67-d2ad6bba6e76 2025-12-02T15:24:04.254Z
+    John Smith STU2024002   Master     Data Science Stanford University     2024-06-20 4.00 Summa Cum Laude  CERT-2024-DS-001 1-fa8cf434-6962-46a2-b916-59af9bc50f77 2025-11-27T07:39:25.119Z
+      Jane Doe STU2024003 Bachelor Computer Science                 MIT     2024-05-15 4.00 Summa Cum Laude  CERT-2024-CS-002 1-b625f26c-098b-4da4-b07a-2ca252c0263a 2025-12-02T15:19:03.843Z
+#+end_example

@@ -1,0 +1,80 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema",
+  "type": "object",
+  "properties": {
+    "WaterFacility": {
+      "$ref": "#/definitions/WaterFacility"
+    }
+  },
+  "required": ["WaterFacility"],
+  "title": "WaterFacility",
+  "definitions": {
+    "WaterFacility": {
+      "$id": "#/properties/WaterFacility",
+      "type": "object",
+      "title": "Water Facility",
+      "description": "Schema for water facilities",
+      "required": [
+        "wfName",
+        "wfId",
+        "typeOfWaterFacility",
+        "address",
+        "institution",
+        "foundingDate"
+      ],
+      "properties": {
+        "wfName": {
+          "type": "string",
+          "description": "Name of the Water Facility"
+        },
+        "wfId": {
+          "type": "string",
+          "description": "Unique identification number"
+        },
+        "typeOfWaterFacility": {
+          "type": "string",
+          "description": "Type of the Water Facility",
+          "enum": ["Water Treatment Plant", "Reservoir", "Pumping Station", "Distribution Center", "Desalination Plant"]
+        },
+        "address": {
+          "type": "string",
+          "description": "Address of the Water Facility"
+        },
+        "institution": {
+          "type": "string",
+          "description": "Name of the institution"
+        },
+        "foundingDate": {
+          "type": "string",
+          "format": "date",
+          "description": "Date of establishment (YYYY-MM-DD)"
+        },
+        "waterCapacity": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1000000,
+          "description": "Water capacity in cubic meters"
+        },
+        "certificateNumber": {
+          "type": "string",
+          "description": "Unique certificate number"
+        }
+      }
+    }
+  },
+  "_osConfig": {
+    "privateFields": [],
+    "signedFields": [],
+    "indexFields": ["wfId", "certificateNumber"],
+    "uniqueIndexFields": ["certificateNumber"],
+    "systemFields": [
+      "osCreatedAt",
+      "osUpdatedAt",
+      "osCreatedBy",
+      "osUpdatedBy"
+    ],
+    "roles": ["admin"],
+    "inviteRoles": ["anonymous"],
+    "ownershipAttributes": []
+  }
+}

@@ -1,0 +1,1177 @@
+#+TITLE: Sunbird RC PostgreSQL Database Explorer
+#+AUTHOR: Sunbird RC
+#+PROPERTY: header-args:sql :engine postgresql
+#+PROPERTY: header-args:sql+ :dbhost localhost
+#+PROPERTY: header-args:sql+ :dbport 5432
+#+PROPERTY: header-args:sql+ :dbuser postgres
+#+PROPERTY: header-args:sql+ :dbpassword postgres
+#+PROPERTY: header-args:sql+ :database registry
+
+* Connection Information
+
+| Property | Value     |
+|----------+-----------|
+| Host     | localhost |
+| Port     | 5432      |
+| Database | registry  |
+| User     | postgres  |
+| Password | postgres  |
+
+* Prerequisites
+
+Make sure the PostgreSQL container is running:
+
+#+begin_src shell :results output
+docker ps --filter "ancestor=postgres:16" --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
+#+end_src
+
+#+RESULTS:
+: NAMES                  STATUS                        PORTS
+: sunbird-rc-core-db-1   Up About a minute (healthy)   0.0.0.0:5432->5432/tcp, :::5432->5432/tcp
+
+* List All Tables
+
+** All Tables in Public Schema
+
+#+begin_src sql :results table
+SELECT
+    schemaname,
+    tablename,
+    tableowner
+FROM pg_tables
+WHERE schemaname = 'public'
+ORDER BY tablename;
+#+end_src
+
+#+RESULTS:
+| schemaname | tablename                     | tableowner |
+|------------+-------------------------------+------------|
+| public     | RevocationLists               | postgres   |
+| public     | Template                      | postgres   |
+| public     | V_Companies_GROUP             | postgres   |
+| public     | V_DegreeCertificate           | postgres   |
+| public     | V_DegreeCertificate_GROUP     | postgres   |
+| public     | V_HealthFacility_GROUP        | postgres   |
+| public     | V_Hospital_GROUP              | postgres   |
+| public     | V_Issuer_GROUP                | postgres   |
+| public     | V_RevokedCredential_GROUP     | postgres   |
+| public     | V_Schema                      | postgres   |
+| public     | V_Schema_GROUP                | postgres   |
+| public     | V_School_GROUP                | postgres   |
+| public     | V_WaterFacility               | postgres   |
+| public     | V_WaterFacility_GROUP         | postgres   |
+| public     | V_graph_global_config         | postgres   |
+| public     | VerifiableCredentialSchema    | postgres   |
+| public     | VerifiableCredentials         | postgres   |
+| public     | _prisma_migrations            | postgres   |
+| public     | admin_event_entity            | postgres   |
+| public     | associated_policy             | postgres   |
+| public     | authentication_execution      | postgres   |
+| public     | authentication_flow           | postgres   |
+| public     | authenticator_config          | postgres   |
+| public     | authenticator_config_entry    | postgres   |
+| public     | broker_link                   | postgres   |
+| public     | claim_notes                   | postgres   |
+| public     | claims                        | postgres   |
+| public     | client                        | postgres   |
+| public     | client_attributes             | postgres   |
+| public     | client_auth_flow_bindings     | postgres   |
+| public     | client_initial_access         | postgres   |
+| public     | client_node_registrations     | postgres   |
+| public     | client_scope                  | postgres   |
+| public     | client_scope_attributes       | postgres   |
+| public     | client_scope_client           | postgres   |
+| public     | client_scope_role_mapping     | postgres   |
+| public     | client_session                | postgres   |
+| public     | client_session_auth_status    | postgres   |
+| public     | client_session_note           | postgres   |
+| public     | client_session_prot_mapper    | postgres   |
+| public     | client_session_role           | postgres   |
+| public     | client_user_session_note      | postgres   |
+| public     | component                     | postgres   |
+| public     | component_config              | postgres   |
+| public     | composite_role                | postgres   |
+| public     | credential                    | postgres   |
+| public     | databasechangelog             | postgres   |
+| public     | databasechangeloglock         | postgres   |
+| public     | default_client_scope          | postgres   |
+| public     | eg_enc_asymmetric_keys        | postgres   |
+| public     | eg_enc_mdms_config            | postgres   |
+| public     | eg_enc_symmetric_keys         | postgres   |
+| public     | event_entity                  | postgres   |
+| public     | fed_user_attribute            | postgres   |
+| public     | fed_user_consent              | postgres   |
+| public     | fed_user_consent_cl_scope     | postgres   |
+| public     | fed_user_credential           | postgres   |
+| public     | fed_user_group_membership     | postgres   |
+| public     | fed_user_required_action      | postgres   |
+| public     | fed_user_role_mapping         | postgres   |
+| public     | federated_identity            | postgres   |
+| public     | federated_user                | postgres   |
+| public     | flyway                        | postgres   |
+| public     | flyway_schema_history         | postgres   |
+| public     | group_attribute               | postgres   |
+| public     | group_role_mapping            | postgres   |
+| public     | id_generator                  | postgres   |
+| public     | identity_provider             | postgres   |
+| public     | identity_provider_config      | postgres   |
+| public     | identity_provider_mapper      | postgres   |
+| public     | idp_mapper_config             | postgres   |
+| public     | keycloak_group                | postgres   |
+| public     | keycloak_role                 | postgres   |
+| public     | migration_model               | postgres   |
+| public     | offline_client_session        | postgres   |
+| public     | offline_user_session          | postgres   |
+| public     | policy_config                 | postgres   |
+| public     | protocol_mapper               | postgres   |
+| public     | protocol_mapper_config        | postgres   |
+| public     | realm                         | postgres   |
+| public     | realm_attribute               | postgres   |
+| public     | realm_default_groups          | postgres   |
+| public     | realm_enabled_event_types     | postgres   |
+| public     | realm_events_listeners        | postgres   |
+| public     | realm_localizations           | postgres   |
+| public     | realm_required_credential     | postgres   |
+| public     | realm_smtp_config             | postgres   |
+| public     | realm_supported_locales       | postgres   |
+| public     | redirect_uris                 | postgres   |
+| public     | required_action_config        | postgres   |
+| public     | required_action_provider      | postgres   |
+| public     | resource_attribute            | postgres   |
+| public     | resource_policy               | postgres   |
+| public     | resource_scope                | postgres   |
+| public     | resource_server               | postgres   |
+| public     | resource_server_perm_ticket   | postgres   |
+| public     | resource_server_policy        | postgres   |
+| public     | resource_server_resource      | postgres   |
+| public     | resource_server_scope         | postgres   |
+| public     | resource_uris                 | postgres   |
+| public     | role_attribute                | postgres   |
+| public     | scope_mapping                 | postgres   |
+| public     | scope_policy                  | postgres   |
+| public     | tenantid_citycode             | postgres   |
+| public     | uploaded_files                | postgres   |
+| public     | user_attribute                | postgres   |
+| public     | user_consent                  | postgres   |
+| public     | user_consent_client_scope     | postgres   |
+| public     | user_entity                   | postgres   |
+| public     | user_federation_config        | postgres   |
+| public     | user_federation_mapper        | postgres   |
+| public     | user_federation_mapper_config | postgres   |
+| public     | user_federation_provider      | postgres   |
+| public     | user_group_membership         | postgres   |
+| public     | user_required_action          | postgres   |
+| public     | user_role_mapping             | postgres   |
+| public     | user_session                  | postgres   |
+| public     | user_session_note             | postgres   |
+| public     | username_login_failure        | postgres   |
+| public     | web_origins                   | postgres   |
+
+** All Tables with Row Counts
+
+#+begin_src sql :results table
+SELECT
+    schemaname,
+    relname AS table_name,
+    n_live_tup AS row_count
+FROM pg_stat_user_tables
+ORDER BY n_live_tup DESC;
+#+end_src
+
+#+RESULTS:
+| schemaname  | table_name                    | row_count |
+|-------------+-------------------------------+-----------|
+| public      | protocol_mapper_config        |       309 |
+| public      | client_scope_client           |       120 |
+| public      | databasechangelog             |       101 |
+| public      | authentication_execution      |        94 |
+| sqlg_schema | V_property                    |        81 |
+| sqlg_schema | E_vertex_property             |        81 |
+| public      | keycloak_role                 |        80 |
+| public      | composite_role                |        76 |
+| public      | realm_attribute               |        71 |
+| public      | component_config              |        62 |
+| public      | flyway_schema_history         |        60 |
+| public      | protocol_mapper               |        59 |
+| public      | client_attributes             |        49 |
+| public      | client_scope_attributes       |        48 |
+| public      | authentication_flow           |        40 |
+| public      | _prisma_migrations            |        25 |
+| public      | component                     |        22 |
+| public      | default_client_scope          |        18 |
+| public      | client_scope                  |        18 |
+| public      | client                        |        16 |
+| public      | id_generator                  |        15 |
+| public      | required_action_provider      |        14 |
+| sqlg_schema | V_vertex                      |        13 |
+| sqlg_schema | E_schema_vertex               |        13 |
+| public      | redirect_uris                 |        12 |
+| sqlg_schema | V_index                       |         8 |
+| sqlg_schema | E_vertex_index                |         8 |
+| sqlg_schema | E_index_property              |         8 |
+| public      | V_DegreeCertificate           |         7 |
+| public      | user_role_mapping             |         7 |
+| public      | V_WaterFacility               |         6 |
+| public      | authenticator_config          |         4 |
+| public      | authenticator_config_entry    |         4 |
+| public      | user_entity                   |         3 |
+| public      | V_Schema                      |         3 |
+| public      | web_origins                   |         3 |
+| public      | databasechangeloglock         |         3 |
+| public      | realm_events_listeners        |         2 |
+| public      | scope_mapping                 |         2 |
+| public      | realm                         |         2 |
+| public      | credential                    |         2 |
+| sqlg_schema | V_schema                      |         2 |
+| public      | flyway                        |         2 |
+| public      | client_scope_role_mapping     |         2 |
+| public      | realm_required_credential     |         2 |
+| public      | eg_enc_asymmetric_keys        |         1 |
+| public      | V_School_GROUP                |         1 |
+| public      | V_Companies_GROUP             |         1 |
+| public      | V_Hospital_GROUP              |         1 |
+| public      | V_DegreeCertificate_GROUP     |         1 |
+| public      | eg_enc_symmetric_keys         |         1 |
+| public      | tenantid_citycode             |         1 |
+| public      | V_graph_global_config         |         1 |
+| public      | V_HealthFacility_GROUP        |         1 |
+| public      | V_WaterFacility_GROUP         |         1 |
+| public      | V_RevokedCredential_GROUP     |         1 |
+| public      | V_Issuer_GROUP                |         1 |
+| public      | migration_model               |         1 |
+| sqlg_schema | V_graph                       |         1 |
+| public      | V_Schema_GROUP                |         1 |
+| sqlg_schema | E_in_edges                    |         0 |
+| sqlg_schema | E_globalUniqueIndex_property  |         0 |
+| public      | client_node_registrations     |         0 |
+| public      | user_required_action          |         0 |
+| public      | user_session_note             |         0 |
+| sqlg_schema | E_vertex_identifier           |         0 |
+| public      | keycloak_group                |         0 |
+| public      | resource_server               |         0 |
+| public      | associated_policy             |         0 |
+| public      | event_entity                  |         0 |
+| sqlg_schema | E_edge_index                  |         0 |
+| public      | resource_scope                |         0 |
+| public      | user_group_membership         |         0 |
+| public      | fed_user_required_action      |         0 |
+| public      | resource_server_policy        |         0 |
+| public      | offline_client_session        |         0 |
+| public      | fed_user_group_membership     |         0 |
+| public      | Template                      |         0 |
+| public      | client_session_auth_status    |         0 |
+| public      | user_session                  |         0 |
+| public      | resource_attribute            |         0 |
+| public      | required_action_config        |         0 |
+| public      | fed_user_role_mapping         |         0 |
+| public      | group_role_mapping            |         0 |
+| sqlg_schema | E_vertex_partition            |         0 |
+| sqlg_schema | E_vertex_colocate             |         0 |
+| public      | fed_user_credential           |         0 |
+| public      | client_initial_access         |         0 |
+| public      | admin_event_entity            |         0 |
+| public      | resource_server_scope         |         0 |
+| public      | broker_link                   |         0 |
+| public      | client_session_prot_mapper    |         0 |
+| sqlg_schema | E_edge_identifier             |         0 |
+| public      | eg_enc_mdms_config            |         0 |
+| public      | role_attribute                |         0 |
+| public      | resource_uris                 |         0 |
+| public      | claims                        |         0 |
+| public      | user_consent                  |         0 |
+| public      | RevocationLists               |         0 |
+| sqlg_schema | V_edge                        |         0 |
+| public      | username_login_failure        |         0 |
+| public      | scope_policy                  |         0 |
+| public      | user_federation_provider      |         0 |
+| public      | user_federation_mapper        |         0 |
+| public      | identity_provider_config      |         0 |
+| public      | realm_localizations           |         0 |
+| public      | idp_mapper_config             |         0 |
+| public      | user_consent_client_scope     |         0 |
+| sqlg_schema | E_edge_distribution           |         0 |
+| sqlg_schema | E_edge_partition              |         0 |
+| public      | realm_default_groups          |         0 |
+| public      | VerifiableCredentials         |         0 |
+| public      | resource_server_resource      |         0 |
+| public      | resource_policy               |         0 |
+| public      | user_federation_mapper_config |         0 |
+| public      | fed_user_attribute            |         0 |
+| sqlg_schema | V_partition                   |         0 |
+| public      | realm_enabled_event_types     |         0 |
+| public      | client_user_session_note      |         0 |
+| public      | identity_provider             |         0 |
+| public      | VerifiableCredentialSchema    |         0 |
+| public      | client_auth_flow_bindings     |         0 |
+| public      | fed_user_consent_cl_scope     |         0 |
+| public      | realm_supported_locales       |         0 |
+| public      | client_session_note           |         0 |
+| sqlg_schema | V_globalUniqueIndex           |         0 |
+| public      | realm_smtp_config             |         0 |
+| sqlg_schema | E_vertex_distribution         |         0 |
+| public      | user_federation_config        |         0 |
+| sqlg_schema | E_edge_property               |         0 |
+| sqlg_schema | E_out_edges                   |         0 |
+| public      | federated_identity            |         0 |
+| sqlg_schema | E_partition_partition         |         0 |
+| public      | identity_provider_mapper      |         0 |
+| public      | group_attribute               |         0 |
+| public      | client_session_role           |         0 |
+| sqlg_schema | E_edge_colocate               |         0 |
+| public      | policy_config                 |         0 |
+| public      | federated_user                |         0 |
+| public      | offline_user_session          |         0 |
+| public      | claim_notes                   |         0 |
+| public      | fed_user_consent              |         0 |
+| public      | user_attribute                |         0 |
+| public      | client_session                |         0 |
+| sqlg_schema | V_log                         |         0 |
+| public      | uploaded_files                |         0 |
+| public      | resource_server_perm_ticket   |         0 |
+
+** Detailed Table Information
+
+#+begin_src sql :results table
+SELECT
+    t.table_name,
+    t.table_type,
+    pg_size_pretty(pg_total_relation_size(quote_ident(t.table_name))) AS total_size,
+    (SELECT count(*) FROM information_schema.columns c WHERE c.table_name = t.table_name) AS column_count
+FROM information_schema.tables t
+WHERE t.table_schema = 'public'
+  AND t.table_type = 'BASE TABLE'
+ORDER BY t.table_name;
+#+end_src
+
+#+RESULTS:
+| table_name                    | table_type | total_size | column_count |
+|-------------------------------+------------+------------+--------------|
+| RevocationLists               | BASE TABLE | 16 kB      |            4 |
+| Template                      | BASE TABLE | 16 kB      |            8 |
+| V_Companies_GROUP             | BASE TABLE | 32 kB      |            5 |
+| V_DegreeCertificate           | BASE TABLE | 80 kB      |           17 |
+| V_DegreeCertificate_GROUP     | BASE TABLE | 32 kB      |            5 |
+| V_HealthFacility_GROUP        | BASE TABLE | 32 kB      |            5 |
+| V_Hospital_GROUP              | BASE TABLE | 32 kB      |            5 |
+| V_Issuer_GROUP                | BASE TABLE | 32 kB      |            5 |
+| V_RevokedCredential_GROUP     | BASE TABLE | 32 kB      |            5 |
+| V_Schema                      | BASE TABLE | 96 kB      |           14 |
+| V_Schema_GROUP                | BASE TABLE | 32 kB      |            5 |
+| V_School_GROUP                | BASE TABLE | 32 kB      |            5 |
+| V_WaterFacility               | BASE TABLE | 80 kB      |           16 |
+| V_WaterFacility_GROUP         | BASE TABLE | 32 kB      |            5 |
+| V_graph_global_config         | BASE TABLE | 24 kB      |            2 |
+| VerifiableCredentialSchema    | BASE TABLE | 80 kB      |           16 |
+| VerifiableCredentials         | BASE TABLE | 16 kB      |           17 |
+| _prisma_migrations            | BASE TABLE | 32 kB      |            8 |
+| admin_event_entity            | BASE TABLE | 16 kB      |           12 |
+| associated_policy             | BASE TABLE | 16 kB      |            2 |
+| authentication_execution      | BASE TABLE | 88 kB      |           10 |
+| authentication_flow           | BASE TABLE | 48 kB      |            7 |
+| authenticator_config          | BASE TABLE | 48 kB      |            3 |
+| authenticator_config_entry    | BASE TABLE | 32 kB      |            3 |
+| broker_link                   | BASE TABLE | 16 kB      |            7 |
+| claim_notes                   | BASE TABLE | 16 kB      |            7 |
+| claims                        | BASE TABLE | 16 kB      |           15 |
+| client                        | BASE TABLE | 64 kB      |           26 |
+| client_attributes             | BASE TABLE | 48 kB      |            3 |
+| client_auth_flow_bindings     | BASE TABLE | 8192 bytes |            3 |
+| client_initial_access         | BASE TABLE | 16 kB      |            6 |
+| client_node_registrations     | BASE TABLE | 8192 bytes |            3 |
+| client_scope                  | BASE TABLE | 64 kB      |            5 |
+| client_scope_attributes       | BASE TABLE | 48 kB      |            3 |
+| client_scope_client           | BASE TABLE | 136 kB     |            3 |
+| client_scope_role_mapping     | BASE TABLE | 56 kB      |            2 |
+| client_session                | BASE TABLE | 24 kB      |           10 |
+| client_session_auth_status    | BASE TABLE | 8192 bytes |            3 |
+| client_session_note           | BASE TABLE | 16 kB      |            3 |
+| client_session_prot_mapper    | BASE TABLE | 8192 bytes |            2 |
+| client_session_role           | BASE TABLE | 8192 bytes |            2 |
+| client_user_session_note      | BASE TABLE | 16 kB      |            3 |
+| component                     | BASE TABLE | 64 kB      |            7 |
+| component_config              | BASE TABLE | 80 kB      |            4 |
+| composite_role                | BASE TABLE | 88 kB      |            2 |
+| credential                    | BASE TABLE | 48 kB      |            9 |
+| databasechangelog             | BASE TABLE | 72 kB      |           14 |
+| databasechangeloglock         | BASE TABLE | 24 kB      |            4 |
+| default_client_scope          | BASE TABLE | 56 kB      |            3 |
+| eg_enc_asymmetric_keys        | BASE TABLE | 64 kB      |            6 |
+| eg_enc_mdms_config            | BASE TABLE | 24 kB      |            2 |
+| eg_enc_symmetric_keys         | BASE TABLE | 64 kB      |            6 |
+| event_entity                  | BASE TABLE | 24 kB      |           10 |
+| fed_user_attribute            | BASE TABLE | 24 kB      |            6 |
+| fed_user_consent              | BASE TABLE | 40 kB      |            9 |
+| fed_user_consent_cl_scope     | BASE TABLE | 8192 bytes |            2 |
+| fed_user_credential           | BASE TABLE | 32 kB      |           11 |
+| fed_user_group_membership     | BASE TABLE | 24 kB      |            4 |
+| fed_user_required_action      | BASE TABLE | 32 kB      |            4 |
+| fed_user_role_mapping         | BASE TABLE | 24 kB      |            4 |
+| federated_identity            | BASE TABLE | 32 kB      |            6 |
+| federated_user                | BASE TABLE | 16 kB      |            3 |
+| flyway                        | BASE TABLE | 48 kB      |           10 |
+| flyway_schema_history         | BASE TABLE | 80 kB      |           10 |
+| group_attribute               | BASE TABLE | 24 kB      |            4 |
+| group_role_mapping            | BASE TABLE | 16 kB      |            2 |
+| id_generator                  | BASE TABLE | 32 kB      |            5 |
+| identity_provider             | BASE TABLE | 32 kB      |           13 |
+| identity_provider_config      | BASE TABLE | 16 kB      |            3 |
+| identity_provider_mapper      | BASE TABLE | 24 kB      |            5 |
+| idp_mapper_config             | BASE TABLE | 16 kB      |            3 |
+| keycloak_group                | BASE TABLE | 16 kB      |            4 |
+| keycloak_role                 | BASE TABLE | 136 kB     |            8 |
+| migration_model               | BASE TABLE | 40 kB      |            3 |
+| offline_client_session        | BASE TABLE | 32 kB      |            7 |
+| offline_user_session          | BASE TABLE | 48 kB      |            7 |
+| policy_config                 | BASE TABLE | 16 kB      |            3 |
+| protocol_mapper               | BASE TABLE | 96 kB      |            6 |
+| protocol_mapper_config        | BASE TABLE | 112 kB     |            3 |
+| realm                         | BASE TABLE | 64 kB      |           53 |
+| realm_attribute               | BASE TABLE | 48 kB      |            3 |
+| realm_default_groups          | BASE TABLE | 24 kB      |            2 |
+| realm_enabled_event_types     | BASE TABLE | 16 kB      |            2 |
+| realm_events_listeners        | BASE TABLE | 40 kB      |            2 |
+| realm_localizations           | BASE TABLE | 16 kB      |            3 |
+| realm_required_credential     | BASE TABLE | 32 kB      |            5 |
+| realm_smtp_config             | BASE TABLE | 16 kB      |            3 |
+| realm_supported_locales       | BASE TABLE | 16 kB      |            2 |
+| redirect_uris                 | BASE TABLE | 40 kB      |            2 |
+| required_action_config        | BASE TABLE | 16 kB      |            3 |
+| required_action_provider      | BASE TABLE | 48 kB      |            8 |
+| resource_attribute            | BASE TABLE | 16 kB      |            4 |
+| resource_policy               | BASE TABLE | 16 kB      |            2 |
+| resource_scope                | BASE TABLE | 16 kB      |            2 |
+| resource_server               | BASE TABLE | 8192 bytes |            4 |
+| resource_server_perm_ticket   | BASE TABLE | 24 kB      |            9 |
+| resource_server_policy        | BASE TABLE | 32 kB      |            8 |
+| resource_server_resource      | BASE TABLE | 32 kB      |            8 |
+| resource_server_scope         | BASE TABLE | 32 kB      |            5 |
+| resource_uris                 | BASE TABLE | 8192 bytes |            2 |
+| role_attribute                | BASE TABLE | 24 kB      |            4 |
+| scope_mapping                 | BASE TABLE | 40 kB      |            2 |
+| scope_policy                  | BASE TABLE | 16 kB      |            2 |
+| tenantid_citycode             | BASE TABLE | 48 kB      |            3 |
+| uploaded_files                | BASE TABLE | 24 kB      |           11 |
+| user_attribute                | BASE TABLE | 32 kB      |            4 |
+| user_consent                  | BASE TABLE | 32 kB      |            7 |
+| user_consent_client_scope     | BASE TABLE | 16 kB      |            2 |
+| user_entity                   | BASE TABLE | 80 kB      |           13 |
+| user_federation_config        | BASE TABLE | 16 kB      |            3 |
+| user_federation_mapper        | BASE TABLE | 32 kB      |            5 |
+| user_federation_mapper_config | BASE TABLE | 16 kB      |            3 |
+| user_federation_provider      | BASE TABLE | 24 kB      |            8 |
+| user_group_membership         | BASE TABLE | 16 kB      |            2 |
+| user_required_action          | BASE TABLE | 16 kB      |            2 |
+| user_role_mapping             | BASE TABLE | 40 kB      |            2 |
+| user_session                  | BASE TABLE | 16 kB      |           12 |
+| user_session_note             | BASE TABLE | 16 kB      |            3 |
+| username_login_failure        | BASE TABLE | 16 kB      |            6 |
+| web_origins                   | BASE TABLE | 40 kB      |            2 |
+
+* List All Schemas
+
+#+begin_src sql :results table
+SELECT
+    schema_name,
+    schema_owner
+FROM information_schema.schemata
+ORDER BY schema_name;
+#+end_src
+
+#+RESULTS:
+| schema_name        | schema_owner      |
+|--------------------+-------------------|
+| gui_schema         | postgres          |
+| information_schema | postgres          |
+| pg_catalog         | postgres          |
+| pg_toast           | postgres          |
+| public             | pg_database_owner |
+| sqlg_schema        | postgres          |
+
+* Entity Tables (Sunbird RC Specific)
+
+** Find Registry Entity Tables
+
+#+begin_src sql :results table
+SELECT
+    tablename,
+    pg_size_pretty(pg_total_relation_size(quote_ident(tablename))) AS size
+FROM pg_tables
+WHERE schemaname = 'public'
+  AND tablename NOT LIKE 'pg_%'
+  AND tablename NOT LIKE 'flyway%'
+  AND tablename NOT LIKE 'databasechangelog%'
+ORDER BY tablename;
+#+end_src
+
+#+RESULTS:
+| tablename                     | size       |
+|-------------------------------+------------|
+| RevocationLists               | 16 kB      |
+| Template                      | 16 kB      |
+| V_Companies_GROUP             | 32 kB      |
+| V_DegreeCertificate           | 80 kB      |
+| V_DegreeCertificate_GROUP     | 32 kB      |
+| V_HealthFacility_GROUP        | 32 kB      |
+| V_Hospital_GROUP              | 32 kB      |
+| V_Issuer_GROUP                | 32 kB      |
+| V_RevokedCredential_GROUP     | 32 kB      |
+| V_Schema                      | 96 kB      |
+| V_Schema_GROUP                | 32 kB      |
+| V_School_GROUP                | 32 kB      |
+| V_WaterFacility               | 80 kB      |
+| V_WaterFacility_GROUP         | 32 kB      |
+| V_graph_global_config         | 24 kB      |
+| VerifiableCredentialSchema    | 80 kB      |
+| VerifiableCredentials         | 16 kB      |
+| _prisma_migrations            | 32 kB      |
+| admin_event_entity            | 16 kB      |
+| associated_policy             | 16 kB      |
+| authentication_execution      | 88 kB      |
+| authentication_flow           | 48 kB      |
+| authenticator_config          | 48 kB      |
+| authenticator_config_entry    | 32 kB      |
+| broker_link                   | 16 kB      |
+| claim_notes                   | 16 kB      |
+| claims                        | 16 kB      |
+| client                        | 64 kB      |
+| client_attributes             | 48 kB      |
+| client_auth_flow_bindings     | 8192 bytes |
+| client_initial_access         | 16 kB      |
+| client_node_registrations     | 8192 bytes |
+| client_scope                  | 64 kB      |
+| client_scope_attributes       | 48 kB      |
+| client_scope_client           | 136 kB     |
+| client_scope_role_mapping     | 56 kB      |
+| client_session                | 24 kB      |
+| client_session_auth_status    | 8192 bytes |
+| client_session_note           | 16 kB      |
+| client_session_prot_mapper    | 8192 bytes |
+| client_session_role           | 8192 bytes |
+| client_user_session_note      | 16 kB      |
+| component                     | 64 kB      |
+| component_config              | 80 kB      |
+| composite_role                | 88 kB      |
+| credential                    | 48 kB      |
+| default_client_scope          | 56 kB      |
+| eg_enc_asymmetric_keys        | 64 kB      |
+| eg_enc_mdms_config            | 24 kB      |
+| eg_enc_symmetric_keys         | 64 kB      |
+| event_entity                  | 24 kB      |
+| fed_user_attribute            | 24 kB      |
+| fed_user_consent              | 40 kB      |
+| fed_user_consent_cl_scope     | 8192 bytes |
+| fed_user_credential           | 32 kB      |
+| fed_user_group_membership     | 24 kB      |
+| fed_user_required_action      | 32 kB      |
+| fed_user_role_mapping         | 24 kB      |
+| federated_identity            | 32 kB      |
+| federated_user                | 16 kB      |
+| group_attribute               | 24 kB      |
+| group_role_mapping            | 16 kB      |
+| id_generator                  | 32 kB      |
+| identity_provider             | 32 kB      |
+| identity_provider_config      | 16 kB      |
+| identity_provider_mapper      | 24 kB      |
+| idp_mapper_config             | 16 kB      |
+| keycloak_group                | 16 kB      |
+| keycloak_role                 | 136 kB     |
+| migration_model               | 40 kB      |
+| offline_client_session        | 32 kB      |
+| offline_user_session          | 48 kB      |
+| policy_config                 | 16 kB      |
+| protocol_mapper               | 96 kB      |
+| protocol_mapper_config        | 112 kB     |
+| realm                         | 64 kB      |
+| realm_attribute               | 48 kB      |
+| realm_default_groups          | 24 kB      |
+| realm_enabled_event_types     | 16 kB      |
+| realm_events_listeners        | 40 kB      |
+| realm_localizations           | 16 kB      |
+| realm_required_credential     | 32 kB      |
+| realm_smtp_config             | 16 kB      |
+| realm_supported_locales       | 16 kB      |
+| redirect_uris                 | 40 kB      |
+| required_action_config        | 16 kB      |
+| required_action_provider      | 48 kB      |
+| resource_attribute            | 16 kB      |
+| resource_policy               | 16 kB      |
+| resource_scope                | 16 kB      |
+| resource_server               | 8192 bytes |
+| resource_server_perm_ticket   | 24 kB      |
+| resource_server_policy        | 32 kB      |
+| resource_server_resource      | 32 kB      |
+| resource_server_scope         | 32 kB      |
+| resource_uris                 | 8192 bytes |
+| role_attribute                | 24 kB      |
+| scope_mapping                 | 40 kB      |
+| scope_policy                  | 16 kB      |
+| tenantid_citycode             | 48 kB      |
+| uploaded_files                | 24 kB      |
+| user_attribute                | 32 kB      |
+| user_consent                  | 32 kB      |
+| user_consent_client_scope     | 16 kB      |
+| user_entity                   | 80 kB      |
+| user_federation_config        | 16 kB      |
+| user_federation_mapper        | 32 kB      |
+| user_federation_mapper_config | 16 kB      |
+| user_federation_provider      | 24 kB      |
+| user_group_membership         | 16 kB      |
+| user_required_action          | 16 kB      |
+| user_role_mapping             | 40 kB      |
+| user_session                  | 16 kB      |
+| user_session_note             | 16 kB      |
+| username_login_failure        | 16 kB      |
+| web_origins                   | 40 kB      |
+
+** OSID Column Search
+
+Find tables that have the OSID column:
+
+#+begin_src sql :results table
+SELECT
+    c.table_name,
+    c.column_name,
+    c.data_type,
+    c.is_nullable
+FROM information_schema.columns c
+JOIN information_schema.tables t ON c.table_name = t.table_name
+WHERE c.column_name = 'osid'
+  AND t.table_schema = 'public'
+ORDER BY c.table_name;
+#+end_src
+
+#+RESULTS:
+| table_name                | column_name | data_type | is_nullable |
+|---------------------------+-------------+-----------+-------------|
+| V_Companies_GROUP         | osid        | text      | YES         |
+| V_DegreeCertificate       | osid        | text      | YES         |
+| V_DegreeCertificate_GROUP | osid        | text      | YES         |
+| V_HealthFacility_GROUP    | osid        | text      | YES         |
+| V_Hospital_GROUP          | osid        | text      | YES         |
+| V_Issuer_GROUP            | osid        | text      | YES         |
+| V_RevokedCredential_GROUP | osid        | text      | YES         |
+| V_Schema                  | osid        | text      | YES         |
+| V_Schema_GROUP            | osid        | text      | YES         |
+| V_School_GROUP            | osid        | text      | YES         |
+| V_WaterFacility           | osid        | text      | YES         |
+| V_WaterFacility_GROUP     | osid        | text      | YES         |
+
+* Table Structure Analysis
+
+** Get Columns for a Specific Table
+
+Replace 'V_Hospital_GROUP' with the actual table name:
+
+#+begin_src sql :results table :var table_name="V_Hospital_GROUP"
+SELECT
+    column_name,
+    data_type,
+    character_maximum_length,
+    is_nullable,
+    column_default
+FROM information_schema.columns
+WHERE table_name = 'V_Hospital_GROUP'
+  AND table_schema = 'public'
+ORDER BY ordinal_position;
+#+end_src
+
+#+RESULTS:
+| column_name       | data_type | character_maximum_length | is_nullable | column_default                                 |
+|-------------------+-----------+--------------------------+-------------+------------------------------------------------|
+| ID                | bigint    |                          | NO          | nextval('"V_Hospital_GROUP_ID_seq"'::regclass) |
+| @type             | text      |                          | YES         |                                                |
+| osid              | text      |                          | YES         |                                                |
+| indexFields       | text      |                          | YES         |                                                |
+| uniqueIndexFields | text      |                          | YES         |                                                |
+
+** Foreign Key Relationships
+
+#+begin_src sql :results table
+SELECT
+    tc.table_name AS source_table,
+    kcu.column_name AS source_column,
+    ccu.table_name AS target_table,
+    ccu.column_name AS target_column
+FROM information_schema.table_constraints tc
+JOIN information_schema.key_column_usage kcu
+    ON tc.constraint_name = kcu.constraint_name
+JOIN information_schema.constraint_column_usage ccu
+    ON ccu.constraint_name = tc.constraint_name
+WHERE tc.constraint_type = 'FOREIGN KEY'
+ORDER BY tc.table_name;
+#+end_src
+
+#+RESULTS:
+| source_table                  | source_column                    | target_table             | target_column |
+|-------------------------------+----------------------------------+--------------------------+---------------|
+| E_edge_colocate               | sqlg_schema.vertex__I            | V_vertex                 | ID            |
+| E_edge_colocate               | sqlg_schema.edge__O              | V_edge                   | ID            |
+| E_edge_distribution           | sqlg_schema.property__I          | V_property               | ID            |
+| E_edge_distribution           | sqlg_schema.edge__O              | V_edge                   | ID            |
+| E_edge_identifier             | sqlg_schema.property__I          | V_property               | ID            |
+| E_edge_identifier             | sqlg_schema.edge__O              | V_edge                   | ID            |
+| E_edge_index                  | sqlg_schema.edge__O              | V_edge                   | ID            |
+| E_edge_index                  | sqlg_schema.index__I             | V_index                  | ID            |
+| E_edge_partition              | sqlg_schema.edge__O              | V_edge                   | ID            |
+| E_edge_partition              | sqlg_schema.partition__I         | V_partition              | ID            |
+| E_edge_property               | sqlg_schema.edge__O              | V_edge                   | ID            |
+| E_edge_property               | sqlg_schema.property__I          | V_property               | ID            |
+| E_globalUniqueIndex_property  | sqlg_schema.property__I          | V_property               | ID            |
+| E_globalUniqueIndex_property  | sqlg_schema.globalUniqueIndex__O | V_globalUniqueIndex      | ID            |
+| E_in_edges                    | sqlg_schema.vertex__O            | V_vertex                 | ID            |
+| E_in_edges                    | sqlg_schema.edge__I              | V_edge                   | ID            |
+| E_index_property              | sqlg_schema.property__I          | V_property               | ID            |
+| E_index_property              | sqlg_schema.index__O             | V_index                  | ID            |
+| E_out_edges                   | sqlg_schema.edge__I              | V_edge                   | ID            |
+| E_out_edges                   | sqlg_schema.vertex__O            | V_vertex                 | ID            |
+| E_partition_partition         | sqlg_schema.partition__I         | V_partition              | ID            |
+| E_partition_partition         | sqlg_schema.partition__O         | V_partition              | ID            |
+| E_schema_vertex               | sqlg_schema.schema__O            | V_schema                 | ID            |
+| E_schema_vertex               | sqlg_schema.vertex__I            | V_vertex                 | ID            |
+| E_vertex_colocate             | sqlg_schema.vertex__I            | V_vertex                 | ID            |
+| E_vertex_colocate             | sqlg_schema.vertex__O            | V_vertex                 | ID            |
+| E_vertex_distribution         | sqlg_schema.vertex__O            | V_vertex                 | ID            |
+| E_vertex_distribution         | sqlg_schema.property__I          | V_property               | ID            |
+| E_vertex_identifier           | sqlg_schema.vertex__O            | V_vertex                 | ID            |
+| E_vertex_identifier           | sqlg_schema.property__I          | V_property               | ID            |
+| E_vertex_index                | sqlg_schema.index__I             | V_index                  | ID            |
+| E_vertex_index                | sqlg_schema.vertex__O            | V_vertex                 | ID            |
+| E_vertex_partition            | sqlg_schema.partition__I         | V_partition              | ID            |
+| E_vertex_partition            | sqlg_schema.vertex__O            | V_vertex                 | ID            |
+| E_vertex_property             | sqlg_schema.property__I          | V_property               | ID            |
+| E_vertex_property             | sqlg_schema.vertex__O            | V_vertex                 | ID            |
+| associated_policy             | associated_policy_id             | resource_server_policy   | id            |
+| associated_policy             | policy_id                        | resource_server_policy   | id            |
+| authentication_execution      | flow_id                          | authentication_flow      | id            |
+| authentication_execution      | realm_id                         | realm                    | id            |
+| authentication_flow           | realm_id                         | realm                    | id            |
+| authenticator_config          | realm_id                         | realm                    | id            |
+| client_attributes             | client_id                        | client                   | id            |
+| client_initial_access         | realm_id                         | realm                    | id            |
+| client_node_registrations     | client_id                        | client                   | id            |
+| client_scope_attributes       | scope_id                         | client_scope             | id            |
+| client_scope_role_mapping     | scope_id                         | client_scope             | id            |
+| client_session                | session_id                       | user_session             | id            |
+| client_session_auth_status    | client_session                   | client_session           | id            |
+| client_session_note           | client_session                   | client_session           | id            |
+| client_session_prot_mapper    | client_session                   | client_session           | id            |
+| client_session_role           | client_session                   | client_session           | id            |
+| client_user_session_note      | client_session                   | client_session           | id            |
+| component                     | realm_id                         | realm                    | id            |
+| component_config              | component_id                     | component                | id            |
+| composite_role                | child_role                       | keycloak_role            | id            |
+| composite_role                | composite                        | keycloak_role            | id            |
+| credential                    | user_id                          | user_entity              | id            |
+| default_client_scope          | realm_id                         | realm                    | id            |
+| federated_identity            | user_id                          | user_entity              | id            |
+| group_attribute               | group_id                         | keycloak_group           | id            |
+| group_role_mapping            | group_id                         | keycloak_group           | id            |
+| identity_provider             | realm_id                         | realm                    | id            |
+| identity_provider_config      | identity_provider_id             | identity_provider        | internal_id   |
+| identity_provider_mapper      | realm_id                         | realm                    | id            |
+| idp_mapper_config             | idp_mapper_id                    | identity_provider_mapper | id            |
+| keycloak_role                 | realm                            | realm                    | id            |
+| policy_config                 | policy_id                        | resource_server_policy   | id            |
+| protocol_mapper               | client_id                        | client                   | id            |
+| protocol_mapper               | client_scope_id                  | client_scope             | id            |
+| protocol_mapper_config        | protocol_mapper_id               | protocol_mapper          | id            |
+| realm_attribute               | realm_id                         | realm                    | id            |
+| realm_default_groups          | realm_id                         | realm                    | id            |
+| realm_enabled_event_types     | realm_id                         | realm                    | id            |
+| realm_events_listeners        | realm_id                         | realm                    | id            |
+| realm_required_credential     | realm_id                         | realm                    | id            |
+| realm_smtp_config             | realm_id                         | realm                    | id            |
+| realm_supported_locales       | realm_id                         | realm                    | id            |
+| redirect_uris                 | client_id                        | client                   | id            |
+| required_action_provider      | realm_id                         | realm                    | id            |
+| resource_attribute            | resource_id                      | resource_server_resource | id            |
+| resource_policy               | policy_id                        | resource_server_policy   | id            |
+| resource_policy               | resource_id                      | resource_server_resource | id            |
+| resource_scope                | resource_id                      | resource_server_resource | id            |
+| resource_scope                | scope_id                         | resource_server_scope    | id            |
+| resource_server_perm_ticket   | resource_server_id               | resource_server          | id            |
+| resource_server_perm_ticket   | scope_id                         | resource_server_scope    | id            |
+| resource_server_perm_ticket   | policy_id                        | resource_server_policy   | id            |
+| resource_server_perm_ticket   | resource_id                      | resource_server_resource | id            |
+| resource_server_policy        | resource_server_id               | resource_server          | id            |
+| resource_server_resource      | resource_server_id               | resource_server          | id            |
+| resource_server_scope         | resource_server_id               | resource_server          | id            |
+| resource_uris                 | resource_id                      | resource_server_resource | id            |
+| role_attribute                | role_id                          | keycloak_role            | id            |
+| scope_mapping                 | client_id                        | client                   | id            |
+| scope_policy                  | scope_id                         | resource_server_scope    | id            |
+| scope_policy                  | policy_id                        | resource_server_policy   | id            |
+| user_attribute                | user_id                          | user_entity              | id            |
+| user_consent                  | user_id                          | user_entity              | id            |
+| user_consent_client_scope     | user_consent_id                  | user_consent             | id            |
+| user_federation_config        | user_federation_provider_id      | user_federation_provider | id            |
+| user_federation_mapper        | realm_id                         | realm                    | id            |
+| user_federation_mapper        | federation_provider_id           | user_federation_provider | id            |
+| user_federation_mapper_config | user_federation_mapper_id        | user_federation_mapper   | id            |
+| user_federation_provider      | realm_id                         | realm                    | id            |
+| user_group_membership         | user_id                          | user_entity              | id            |
+| user_required_action          | user_id                          | user_entity              | id            |
+| user_role_mapping             | user_id                          | user_entity              | id            |
+| user_session_note             | user_session                     | user_session             | id            |
+| web_origins                   | client_id                        | client                   | id            |
+
+* Index Information
+
+#+begin_src sql :results table
+SELECT
+    tablename,
+    indexname,
+    indexdef
+FROM pg_indexes
+WHERE schemaname = 'public'
+ORDER BY tablename, indexname;
+#+end_src
+
+#+RESULTS:
+| tablename                     | indexname                                            | indexdef                                                                                                                                                                            |
+|-------------------------------+------------------------------------------------------+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| RevocationLists               | RevocationLists_pkey                                 | CREATE UNIQUE INDEX "RevocationLists_pkey" ON public."RevocationLists" USING btree (issuer)                                                                                         |
+| Template                      | Template_pkey                                        | CREATE UNIQUE INDEX "Template_pkey" ON public."Template" USING btree ("templateId")                                                                                                 |
+| V_Companies_GROUP             | V_Companies_GROUP_pkey                               | CREATE UNIQUE INDEX "V_Companies_GROUP_pkey" ON public."V_Companies_GROUP" USING btree ("ID")                                                                                       |
+| V_DegreeCertificate           | V_DegreeCertificate_pkey                             | CREATE UNIQUE INDEX "V_DegreeCertificate_pkey" ON public."V_DegreeCertificate" USING btree ("ID")                                                                                   |
+| V_DegreeCertificate           | public_V_DegreeCertificate_certificateNumber_sqlgIdx | CREATE UNIQUE INDEX "public_V_DegreeCertificate_certificateNumber_sqlgIdx" ON public."V_DegreeCertificate" USING btree ("certificateNumber")                                        |
+| V_DegreeCertificate           | public_V_DegreeCertificate_osid_sqlgIdx              | CREATE INDEX "public_V_DegreeCertificate_osid_sqlgIdx" ON public."V_DegreeCertificate" USING btree (osid)                                                                           |
+| V_DegreeCertificate           | public_V_DegreeCertificate_studentId_sqlgIdx         | CREATE INDEX "public_V_DegreeCertificate_studentId_sqlgIdx" ON public."V_DegreeCertificate" USING btree ("studentId")                                                               |
+| V_DegreeCertificate_GROUP     | V_DegreeCertificate_GROUP_pkey                       | CREATE UNIQUE INDEX "V_DegreeCertificate_GROUP_pkey" ON public."V_DegreeCertificate_GROUP" USING btree ("ID")                                                                       |
+| V_HealthFacility_GROUP        | V_HealthFacility_GROUP_pkey                          | CREATE UNIQUE INDEX "V_HealthFacility_GROUP_pkey" ON public."V_HealthFacility_GROUP" USING btree ("ID")                                                                             |
+| V_Hospital_GROUP              | V_Hospital_GROUP_pkey                                | CREATE UNIQUE INDEX "V_Hospital_GROUP_pkey" ON public."V_Hospital_GROUP" USING btree ("ID")                                                                                         |
+| V_Issuer_GROUP                | V_Issuer_GROUP_pkey                                  | CREATE UNIQUE INDEX "V_Issuer_GROUP_pkey" ON public."V_Issuer_GROUP" USING btree ("ID")                                                                                             |
+| V_RevokedCredential_GROUP     | V_RevokedCredential_GROUP_pkey                       | CREATE UNIQUE INDEX "V_RevokedCredential_GROUP_pkey" ON public."V_RevokedCredential_GROUP" USING btree ("ID")                                                                       |
+| V_Schema                      | V_Schema_pkey                                        | CREATE UNIQUE INDEX "V_Schema_pkey" ON public."V_Schema" USING btree ("ID")                                                                                                         |
+| V_Schema                      | public_V_Schema_name_sqlgIdx                         | CREATE UNIQUE INDEX "public_V_Schema_name_sqlgIdx" ON public."V_Schema" USING btree (name)                                                                                          |
+| V_Schema                      | public_V_Schema_osid_sqlgIdx                         | CREATE INDEX "public_V_Schema_osid_sqlgIdx" ON public."V_Schema" USING btree (osid)                                                                                                 |
+| V_Schema_GROUP                | V_Schema_GROUP_pkey                                  | CREATE UNIQUE INDEX "V_Schema_GROUP_pkey" ON public."V_Schema_GROUP" USING btree ("ID")                                                                                             |
+| V_School_GROUP                | V_School_GROUP_pkey                                  | CREATE UNIQUE INDEX "V_School_GROUP_pkey" ON public."V_School_GROUP" USING btree ("ID")                                                                                             |
+| V_WaterFacility               | V_WaterFacility_pkey                                 | CREATE UNIQUE INDEX "V_WaterFacility_pkey" ON public."V_WaterFacility" USING btree ("ID")                                                                                           |
+| V_WaterFacility               | public_V_WaterFacility_certificateNumber_sqlgIdx     | CREATE UNIQUE INDEX "public_V_WaterFacility_certificateNumber_sqlgIdx" ON public."V_WaterFacility" USING btree ("certificateNumber")                                                |
+| V_WaterFacility               | public_V_WaterFacility_osid_sqlgIdx                  | CREATE INDEX "public_V_WaterFacility_osid_sqlgIdx" ON public."V_WaterFacility" USING btree (osid)                                                                                   |
+| V_WaterFacility               | public_V_WaterFacility_wfId_sqlgIdx                  | CREATE INDEX "public_V_WaterFacility_wfId_sqlgIdx" ON public."V_WaterFacility" USING btree ("wfId")                                                                                 |
+| V_WaterFacility_GROUP         | V_WaterFacility_GROUP_pkey                           | CREATE UNIQUE INDEX "V_WaterFacility_GROUP_pkey" ON public."V_WaterFacility_GROUP" USING btree ("ID")                                                                               |
+| V_graph_global_config         | V_graph_global_config_pkey                           | CREATE UNIQUE INDEX "V_graph_global_config_pkey" ON public."V_graph_global_config" USING btree ("ID")                                                                               |
+| VerifiableCredentialSchema    | VerifiableCredentialSchema_name_idx                  | CREATE INDEX "VerifiableCredentialSchema_name_idx" ON public."VerifiableCredentialSchema" USING hash (name)                                                                         |
+| VerifiableCredentialSchema    | VerifiableCredentialSchema_pkey                      | CREATE UNIQUE INDEX "VerifiableCredentialSchema_pkey" ON public."VerifiableCredentialSchema" USING btree (id, version)                                                              |
+| VerifiableCredentialSchema    | VerifiableCredentialSchema_type_idx                  | CREATE INDEX "VerifiableCredentialSchema_type_idx" ON public."VerifiableCredentialSchema" USING hash (type)                                                                         |
+| VerifiableCredentials         | VerifiableCredentials_pkey                           | CREATE UNIQUE INDEX "VerifiableCredentials_pkey" ON public."VerifiableCredentials" USING btree (id)                                                                                 |
+| _prisma_migrations            | _prisma_migrations_pkey                              | CREATE UNIQUE INDEX _prisma_migrations_pkey ON public._prisma_migrations USING btree (id)                                                                                           |
+| admin_event_entity            | constraint_admin_event_entity                        | CREATE UNIQUE INDEX constraint_admin_event_entity ON public.admin_event_entity USING btree (id)                                                                                     |
+| associated_policy             | constraint_farsrpap                                  | CREATE UNIQUE INDEX constraint_farsrpap ON public.associated_policy USING btree (policy_id, associated_policy_id)                                                                   |
+| associated_policy             | idx_assoc_pol_assoc_pol_id                           | CREATE INDEX idx_assoc_pol_assoc_pol_id ON public.associated_policy USING btree (associated_policy_id)                                                                              |
+| authentication_execution      | constraint_auth_exec_pk                              | CREATE UNIQUE INDEX constraint_auth_exec_pk ON public.authentication_execution USING btree (id)                                                                                     |
+| authentication_execution      | idx_auth_exec_flow                                   | CREATE INDEX idx_auth_exec_flow ON public.authentication_execution USING btree (flow_id)                                                                                            |
+| authentication_execution      | idx_auth_exec_realm_flow                             | CREATE INDEX idx_auth_exec_realm_flow ON public.authentication_execution USING btree (realm_id, flow_id)                                                                            |
+| authentication_flow           | constraint_auth_flow_pk                              | CREATE UNIQUE INDEX constraint_auth_flow_pk ON public.authentication_flow USING btree (id)                                                                                          |
+| authentication_flow           | idx_auth_flow_realm                                  | CREATE INDEX idx_auth_flow_realm ON public.authentication_flow USING btree (realm_id)                                                                                               |
+| authenticator_config          | constraint_auth_pk                                   | CREATE UNIQUE INDEX constraint_auth_pk ON public.authenticator_config USING btree (id)                                                                                              |
+| authenticator_config          | idx_auth_config_realm                                | CREATE INDEX idx_auth_config_realm ON public.authenticator_config USING btree (realm_id)                                                                                            |
+| authenticator_config_entry    | constraint_auth_cfg_pk                               | CREATE UNIQUE INDEX constraint_auth_cfg_pk ON public.authenticator_config_entry USING btree (authenticator_id, name)                                                                |
+| broker_link                   | constr_broker_link_pk                                | CREATE UNIQUE INDEX constr_broker_link_pk ON public.broker_link USING btree (identity_provider, user_id)                                                                            |
+| claim_notes                   | claim_notes_pkey                                     | CREATE UNIQUE INDEX claim_notes_pkey ON public.claim_notes USING btree (id)                                                                                                         |
+| claims                        | claims_pkey                                          | CREATE UNIQUE INDEX claims_pkey ON public.claims USING btree (id)                                                                                                                   |
+| client                        | constraint_7                                         | CREATE UNIQUE INDEX constraint_7 ON public.client USING btree (id)                                                                                                                  |
+| client                        | idx_client_id                                        | CREATE INDEX idx_client_id ON public.client USING btree (client_id)                                                                                                                 |
+| client                        | uk_b71cjlbenv945rb6gcon438at                         | CREATE UNIQUE INDEX uk_b71cjlbenv945rb6gcon438at ON public.client USING btree (realm_id, client_id)                                                                                 |
+| client_attributes             | constraint_3c                                        | CREATE UNIQUE INDEX constraint_3c ON public.client_attributes USING btree (client_id, name)                                                                                         |
+| client_attributes             | idx_client_att_by_name_value                         | CREATE INDEX idx_client_att_by_name_value ON public.client_attributes USING btree (name, value)                                                                                     |
+| client_auth_flow_bindings     | c_cli_flow_bind                                      | CREATE UNIQUE INDEX c_cli_flow_bind ON public.client_auth_flow_bindings USING btree (client_id, binding_name)                                                                       |
+| client_initial_access         | cnstr_client_init_acc_pk                             | CREATE UNIQUE INDEX cnstr_client_init_acc_pk ON public.client_initial_access USING btree (id)                                                                                       |
+| client_initial_access         | idx_client_init_acc_realm                            | CREATE INDEX idx_client_init_acc_realm ON public.client_initial_access USING btree (realm_id)                                                                                       |
+| client_node_registrations     | constraint_84                                        | CREATE UNIQUE INDEX constraint_84 ON public.client_node_registrations USING btree (client_id, name)                                                                                 |
+| client_scope                  | idx_realm_clscope                                    | CREATE INDEX idx_realm_clscope ON public.client_scope USING btree (realm_id)                                                                                                        |
+| client_scope                  | pk_cli_template                                      | CREATE UNIQUE INDEX pk_cli_template ON public.client_scope USING btree (id)                                                                                                         |
+| client_scope                  | uk_cli_scope                                         | CREATE UNIQUE INDEX uk_cli_scope ON public.client_scope USING btree (realm_id, name)                                                                                                |
+| client_scope_attributes       | idx_clscope_attrs                                    | CREATE INDEX idx_clscope_attrs ON public.client_scope_attributes USING btree (scope_id)                                                                                             |
+| client_scope_attributes       | pk_cl_tmpl_attr                                      | CREATE UNIQUE INDEX pk_cl_tmpl_attr ON public.client_scope_attributes USING btree (scope_id, name)                                                                                  |
+| client_scope_client           | c_cli_scope_bind                                     | CREATE UNIQUE INDEX c_cli_scope_bind ON public.client_scope_client USING btree (client_id, scope_id)                                                                                |
+| client_scope_client           | idx_cl_clscope                                       | CREATE INDEX idx_cl_clscope ON public.client_scope_client USING btree (scope_id)                                                                                                    |
+| client_scope_client           | idx_clscope_cl                                       | CREATE INDEX idx_clscope_cl ON public.client_scope_client USING btree (client_id)                                                                                                   |
+| client_scope_role_mapping     | idx_clscope_role                                     | CREATE INDEX idx_clscope_role ON public.client_scope_role_mapping USING btree (scope_id)                                                                                            |
+| client_scope_role_mapping     | idx_role_clscope                                     | CREATE INDEX idx_role_clscope ON public.client_scope_role_mapping USING btree (role_id)                                                                                             |
+| client_scope_role_mapping     | pk_template_scope                                    | CREATE UNIQUE INDEX pk_template_scope ON public.client_scope_role_mapping USING btree (scope_id, role_id)                                                                           |
+| client_session                | constraint_8                                         | CREATE UNIQUE INDEX constraint_8 ON public.client_session USING btree (id)                                                                                                          |
+| client_session                | idx_client_session_session                           | CREATE INDEX idx_client_session_session ON public.client_session USING btree (session_id)                                                                                           |
+| client_session_auth_status    | constraint_auth_status_pk                            | CREATE UNIQUE INDEX constraint_auth_status_pk ON public.client_session_auth_status USING btree (client_session, authenticator)                                                      |
+| client_session_note           | constraint_5e                                        | CREATE UNIQUE INDEX constraint_5e ON public.client_session_note USING btree (client_session, name)                                                                                  |
+| client_session_prot_mapper    | constraint_cs_pmp_pk                                 | CREATE UNIQUE INDEX constraint_cs_pmp_pk ON public.client_session_prot_mapper USING btree (client_session, protocol_mapper_id)                                                      |
+| client_session_role           | constraint_5                                         | CREATE UNIQUE INDEX constraint_5 ON public.client_session_role USING btree (client_session, role_id)                                                                                |
+| client_user_session_note      | constr_cl_usr_ses_note                               | CREATE UNIQUE INDEX constr_cl_usr_ses_note ON public.client_user_session_note USING btree (client_session, name)                                                                    |
+| component                     | constr_component_pk                                  | CREATE UNIQUE INDEX constr_component_pk ON public.component USING btree (id)                                                                                                        |
+| component                     | idx_component_provider_type                          | CREATE INDEX idx_component_provider_type ON public.component USING btree (provider_type)                                                                                            |
+| component                     | idx_component_realm                                  | CREATE INDEX idx_component_realm ON public.component USING btree (realm_id)                                                                                                         |
+| component_config              | constr_component_config_pk                           | CREATE UNIQUE INDEX constr_component_config_pk ON public.component_config USING btree (id)                                                                                          |
+| component_config              | idx_compo_config_compo                               | CREATE INDEX idx_compo_config_compo ON public.component_config USING btree (component_id)                                                                                           |
+| composite_role                | constraint_composite_role                            | CREATE UNIQUE INDEX constraint_composite_role ON public.composite_role USING btree (composite, child_role)                                                                          |
+| composite_role                | idx_composite                                        | CREATE INDEX idx_composite ON public.composite_role USING btree (composite)                                                                                                         |
+| composite_role                | idx_composite_child                                  | CREATE INDEX idx_composite_child ON public.composite_role USING btree (child_role)                                                                                                  |
+| credential                    | constraint_f                                         | CREATE UNIQUE INDEX constraint_f ON public.credential USING btree (id)                                                                                                              |
+| credential                    | idx_user_credential                                  | CREATE INDEX idx_user_credential ON public.credential USING btree (user_id)                                                                                                         |
+| databasechangeloglock         | pk_databasechangeloglock                             | CREATE UNIQUE INDEX pk_databasechangeloglock ON public.databasechangeloglock USING btree (id)                                                                                       |
+| default_client_scope          | idx_defcls_realm                                     | CREATE INDEX idx_defcls_realm ON public.default_client_scope USING btree (realm_id)                                                                                                 |
+| default_client_scope          | idx_defcls_scope                                     | CREATE INDEX idx_defcls_scope ON public.default_client_scope USING btree (scope_id)                                                                                                 |
+| default_client_scope          | r_def_cli_scope_bind                                 | CREATE UNIQUE INDEX r_def_cli_scope_bind ON public.default_client_scope USING btree (realm_id, scope_id)                                                                            |
+| eg_enc_asymmetric_keys        | active_tenant_asymmetric_keys                        | CREATE UNIQUE INDEX active_tenant_asymmetric_keys ON public.eg_enc_asymmetric_keys USING btree (tenant_id) WHERE (active IS TRUE)                                                   |
+| eg_enc_asymmetric_keys        | eg_asymmetric_key_id                                 | CREATE UNIQUE INDEX eg_asymmetric_key_id ON public.eg_enc_asymmetric_keys USING btree (key_id)                                                                                      |
+| eg_enc_asymmetric_keys        | eg_enc_asymmetric_keys_pkey                          | CREATE UNIQUE INDEX eg_enc_asymmetric_keys_pkey ON public.eg_enc_asymmetric_keys USING btree (id)                                                                                   |
+| eg_enc_mdms_config            | eg_enc_mdms_config_pkey                              | CREATE UNIQUE INDEX eg_enc_mdms_config_pkey ON public.eg_enc_mdms_config USING btree (id)                                                                                           |
+| eg_enc_mdms_config            | eg_enc_mdms_config_tenant_id                         | CREATE UNIQUE INDEX eg_enc_mdms_config_tenant_id ON public.eg_enc_mdms_config USING btree (tenant_id)                                                                               |
+| eg_enc_symmetric_keys         | active_tenant_symmetric_keys                         | CREATE UNIQUE INDEX active_tenant_symmetric_keys ON public.eg_enc_symmetric_keys USING btree (tenant_id) WHERE (active IS TRUE)                                                     |
+| eg_enc_symmetric_keys         | eg_enc_symmetric_keys_pkey                           | CREATE UNIQUE INDEX eg_enc_symmetric_keys_pkey ON public.eg_enc_symmetric_keys USING btree (id)                                                                                     |
+| eg_enc_symmetric_keys         | eg_symmetric_key_id                                  | CREATE UNIQUE INDEX eg_symmetric_key_id ON public.eg_enc_symmetric_keys USING btree (key_id)                                                                                        |
+| event_entity                  | constraint_4                                         | CREATE UNIQUE INDEX constraint_4 ON public.event_entity USING btree (id)                                                                                                            |
+| event_entity                  | idx_event_time                                       | CREATE INDEX idx_event_time ON public.event_entity USING btree (realm_id, event_time)                                                                                               |
+| fed_user_attribute            | constr_fed_user_attr_pk                              | CREATE UNIQUE INDEX constr_fed_user_attr_pk ON public.fed_user_attribute USING btree (id)                                                                                           |
+| fed_user_attribute            | idx_fu_attribute                                     | CREATE INDEX idx_fu_attribute ON public.fed_user_attribute USING btree (user_id, realm_id, name)                                                                                    |
+| fed_user_consent              | constr_fed_user_consent_pk                           | CREATE UNIQUE INDEX constr_fed_user_consent_pk ON public.fed_user_consent USING btree (id)                                                                                          |
+| fed_user_consent              | idx_fu_cnsnt_ext                                     | CREATE INDEX idx_fu_cnsnt_ext ON public.fed_user_consent USING btree (user_id, client_storage_provider, external_client_id)                                                         |
+| fed_user_consent              | idx_fu_consent                                       | CREATE INDEX idx_fu_consent ON public.fed_user_consent USING btree (user_id, client_id)                                                                                             |
+| fed_user_consent              | idx_fu_consent_ru                                    | CREATE INDEX idx_fu_consent_ru ON public.fed_user_consent USING btree (realm_id, user_id)                                                                                           |
+| fed_user_consent_cl_scope     | constraint_fgrntcsnt_clsc_pm                         | CREATE UNIQUE INDEX constraint_fgrntcsnt_clsc_pm ON public.fed_user_consent_cl_scope USING btree (user_consent_id, scope_id)                                                        |
+| fed_user_credential           | constr_fed_user_cred_pk                              | CREATE UNIQUE INDEX constr_fed_user_cred_pk ON public.fed_user_credential USING btree (id)                                                                                          |
+| fed_user_credential           | idx_fu_credential                                    | CREATE INDEX idx_fu_credential ON public.fed_user_credential USING btree (user_id, type)                                                                                            |
+| fed_user_credential           | idx_fu_credential_ru                                 | CREATE INDEX idx_fu_credential_ru ON public.fed_user_credential USING btree (realm_id, user_id)                                                                                     |
+| fed_user_group_membership     | constr_fed_user_group                                | CREATE UNIQUE INDEX constr_fed_user_group ON public.fed_user_group_membership USING btree (group_id, user_id)                                                                       |
+| fed_user_group_membership     | idx_fu_group_membership                              | CREATE INDEX idx_fu_group_membership ON public.fed_user_group_membership USING btree (user_id, group_id)                                                                            |
+| fed_user_group_membership     | idx_fu_group_membership_ru                           | CREATE INDEX idx_fu_group_membership_ru ON public.fed_user_group_membership USING btree (realm_id, user_id)                                                                         |
+| fed_user_required_action      | constr_fed_required_action                           | CREATE UNIQUE INDEX constr_fed_required_action ON public.fed_user_required_action USING btree (required_action, user_id)                                                            |
+| fed_user_required_action      | idx_fu_required_action                               | CREATE INDEX idx_fu_required_action ON public.fed_user_required_action USING btree (user_id, required_action)                                                                       |
+| fed_user_required_action      | idx_fu_required_action_ru                            | CREATE INDEX idx_fu_required_action_ru ON public.fed_user_required_action USING btree (realm_id, user_id)                                                                           |
+| fed_user_role_mapping         | constr_fed_user_role                                 | CREATE UNIQUE INDEX constr_fed_user_role ON public.fed_user_role_mapping USING btree (role_id, user_id)                                                                             |
+| fed_user_role_mapping         | idx_fu_role_mapping                                  | CREATE INDEX idx_fu_role_mapping ON public.fed_user_role_mapping USING btree (user_id, role_id)                                                                                     |
+| fed_user_role_mapping         | idx_fu_role_mapping_ru                               | CREATE INDEX idx_fu_role_mapping_ru ON public.fed_user_role_mapping USING btree (realm_id, user_id)                                                                                 |
+| federated_identity            | constraint_40                                        | CREATE UNIQUE INDEX constraint_40 ON public.federated_identity USING btree (identity_provider, user_id)                                                                             |
+| federated_identity            | idx_fedidentity_feduser                              | CREATE INDEX idx_fedidentity_feduser ON public.federated_identity USING btree (federated_user_id)                                                                                   |
+| federated_identity            | idx_fedidentity_user                                 | CREATE INDEX idx_fedidentity_user ON public.federated_identity USING btree (user_id)                                                                                                |
+| federated_user                | constr_federated_user                                | CREATE UNIQUE INDEX constr_federated_user ON public.federated_user USING btree (id)                                                                                                 |
+| flyway                        | flyway_pk                                            | CREATE UNIQUE INDEX flyway_pk ON public.flyway USING btree (installed_rank)                                                                                                         |
+| flyway                        | flyway_s_idx                                         | CREATE INDEX flyway_s_idx ON public.flyway USING btree (success)                                                                                                                    |
+| flyway_schema_history         | flyway_schema_history_pk                             | CREATE UNIQUE INDEX flyway_schema_history_pk ON public.flyway_schema_history USING btree (installed_rank)                                                                           |
+| flyway_schema_history         | flyway_schema_history_s_idx                          | CREATE INDEX flyway_schema_history_s_idx ON public.flyway_schema_history USING btree (success)                                                                                      |
+| group_attribute               | constraint_group_attribute_pk                        | CREATE UNIQUE INDEX constraint_group_attribute_pk ON public.group_attribute USING btree (id)                                                                                        |
+| group_attribute               | idx_group_attr_group                                 | CREATE INDEX idx_group_attr_group ON public.group_attribute USING btree (group_id)                                                                                                  |
+| group_role_mapping            | constraint_group_role                                | CREATE UNIQUE INDEX constraint_group_role ON public.group_role_mapping USING btree (role_id, group_id)                                                                              |
+| group_role_mapping            | idx_group_role_mapp_group                            | CREATE INDEX idx_group_role_mapp_group ON public.group_role_mapping USING btree (group_id)                                                                                          |
+| id_generator                  | pk_id_generator                                      | CREATE UNIQUE INDEX pk_id_generator ON public.id_generator USING btree (idname, tenantid)                                                                                           |
+| identity_provider             | constraint_2b                                        | CREATE UNIQUE INDEX constraint_2b ON public.identity_provider USING btree (internal_id)                                                                                             |
+| identity_provider             | idx_ident_prov_realm                                 | CREATE INDEX idx_ident_prov_realm ON public.identity_provider USING btree (realm_id)                                                                                                |
+| identity_provider             | uk_2daelwnibji49avxsrtuf6xj33                        | CREATE UNIQUE INDEX uk_2daelwnibji49avxsrtuf6xj33 ON public.identity_provider USING btree (provider_alias, realm_id)                                                                |
+| identity_provider_config      | constraint_d                                         | CREATE UNIQUE INDEX constraint_d ON public.identity_provider_config USING btree (identity_provider_id, name)                                                                        |
+| identity_provider_mapper      | constraint_idpm                                      | CREATE UNIQUE INDEX constraint_idpm ON public.identity_provider_mapper USING btree (id)                                                                                             |
+| identity_provider_mapper      | idx_id_prov_mapp_realm                               | CREATE INDEX idx_id_prov_mapp_realm ON public.identity_provider_mapper USING btree (realm_id)                                                                                       |
+| idp_mapper_config             | constraint_idpmconfig                                | CREATE UNIQUE INDEX constraint_idpmconfig ON public.idp_mapper_config USING btree (idp_mapper_id, name)                                                                             |
+| keycloak_group                | constraint_group                                     | CREATE UNIQUE INDEX constraint_group ON public.keycloak_group USING btree (id)                                                                                                      |
+| keycloak_group                | sibling_names                                        | CREATE UNIQUE INDEX sibling_names ON public.keycloak_group USING btree (realm_id, parent_group, name)                                                                               |
+| keycloak_role                 | UK_J3RWUVD56ONTGSUHOGM184WW2-2                       | CREATE UNIQUE INDEX "UK_J3RWUVD56ONTGSUHOGM184WW2-2" ON public.keycloak_role USING btree (name, client_realm_constraint)                                                            |
+| keycloak_role                 | constraint_a                                         | CREATE UNIQUE INDEX constraint_a ON public.keycloak_role USING btree (id)                                                                                                           |
+| keycloak_role                 | idx_keycloak_role_client                             | CREATE INDEX idx_keycloak_role_client ON public.keycloak_role USING btree (client)                                                                                                  |
+| keycloak_role                 | idx_keycloak_role_realm                              | CREATE INDEX idx_keycloak_role_realm ON public.keycloak_role USING btree (realm)                                                                                                    |
+| migration_model               | constraint_migmod                                    | CREATE UNIQUE INDEX constraint_migmod ON public.migration_model USING btree (id)                                                                                                    |
+| migration_model               | idx_update_time                                      | CREATE INDEX idx_update_time ON public.migration_model USING btree (update_time)                                                                                                    |
+| offline_client_session        | constraint_offl_cl_ses_pk3                           | CREATE UNIQUE INDEX constraint_offl_cl_ses_pk3 ON public.offline_client_session USING btree (user_session_id, client_id, client_storage_provider, external_client_id, offline_flag) |
+| offline_client_session        | idx_offline_css_preload                              | CREATE INDEX idx_offline_css_preload ON public.offline_client_session USING btree (client_id, offline_flag)                                                                         |
+| offline_client_session        | idx_us_sess_id_on_cl_sess                            | CREATE INDEX idx_us_sess_id_on_cl_sess ON public.offline_client_session USING btree (user_session_id)                                                                               |
+| offline_user_session          | constraint_offl_us_ses_pk2                           | CREATE UNIQUE INDEX constraint_offl_us_ses_pk2 ON public.offline_user_session USING btree (user_session_id, offline_flag)                                                           |
+| offline_user_session          | idx_offline_uss_by_user                              | CREATE INDEX idx_offline_uss_by_user ON public.offline_user_session USING btree (user_id, realm_id, offline_flag)                                                                   |
+| offline_user_session          | idx_offline_uss_by_usersess                          | CREATE INDEX idx_offline_uss_by_usersess ON public.offline_user_session USING btree (realm_id, offline_flag, user_session_id)                                                       |
+| offline_user_session          | idx_offline_uss_createdon                            | CREATE INDEX idx_offline_uss_createdon ON public.offline_user_session USING btree (created_on)                                                                                      |
+| offline_user_session          | idx_offline_uss_preload                              | CREATE INDEX idx_offline_uss_preload ON public.offline_user_session USING btree (offline_flag, created_on, user_session_id)                                                         |
+| policy_config                 | constraint_dpc                                       | CREATE UNIQUE INDEX constraint_dpc ON public.policy_config USING btree (policy_id, name)                                                                                            |
+| protocol_mapper               | constraint_pcm                                       | CREATE UNIQUE INDEX constraint_pcm ON public.protocol_mapper USING btree (id)                                                                                                       |
+| protocol_mapper               | idx_clscope_protmap                                  | CREATE INDEX idx_clscope_protmap ON public.protocol_mapper USING btree (client_scope_id)                                                                                            |
+| protocol_mapper               | idx_protocol_mapper_client                           | CREATE INDEX idx_protocol_mapper_client ON public.protocol_mapper USING btree (client_id)                                                                                           |
+| protocol_mapper_config        | constraint_pmconfig                                  | CREATE UNIQUE INDEX constraint_pmconfig ON public.protocol_mapper_config USING btree (protocol_mapper_id, name)                                                                     |
+| realm                         | constraint_4a                                        | CREATE UNIQUE INDEX constraint_4a ON public.realm USING btree (id)                                                                                                                  |
+| realm                         | idx_realm_master_adm_cli                             | CREATE INDEX idx_realm_master_adm_cli ON public.realm USING btree (master_admin_client)                                                                                             |
+| realm                         | uk_orvsdmla56612eaefiq6wl5oi                         | CREATE UNIQUE INDEX uk_orvsdmla56612eaefiq6wl5oi ON public.realm USING btree (name)                                                                                                 |
+| realm_attribute               | constraint_9                                         | CREATE UNIQUE INDEX constraint_9 ON public.realm_attribute USING btree (name, realm_id)                                                                                             |
+| realm_attribute               | idx_realm_attr_realm                                 | CREATE INDEX idx_realm_attr_realm ON public.realm_attribute USING btree (realm_id)                                                                                                  |
+| realm_default_groups          | con_group_id_def_groups                              | CREATE UNIQUE INDEX con_group_id_def_groups ON public.realm_default_groups USING btree (group_id)                                                                                   |
+| realm_default_groups          | constr_realm_default_groups                          | CREATE UNIQUE INDEX constr_realm_default_groups ON public.realm_default_groups USING btree (realm_id, group_id)                                                                     |
+| realm_default_groups          | idx_realm_def_grp_realm                              | CREATE INDEX idx_realm_def_grp_realm ON public.realm_default_groups USING btree (realm_id)                                                                                          |
+| realm_enabled_event_types     | constr_realm_enabl_event_types                       | CREATE UNIQUE INDEX constr_realm_enabl_event_types ON public.realm_enabled_event_types USING btree (realm_id, value)                                                                |
+| realm_enabled_event_types     | idx_realm_evt_types_realm                            | CREATE INDEX idx_realm_evt_types_realm ON public.realm_enabled_event_types USING btree (realm_id)                                                                                   |
+| realm_events_listeners        | constr_realm_events_listeners                        | CREATE UNIQUE INDEX constr_realm_events_listeners ON public.realm_events_listeners USING btree (realm_id, value)                                                                    |
+| realm_events_listeners        | idx_realm_evt_list_realm                             | CREATE INDEX idx_realm_evt_list_realm ON public.realm_events_listeners USING btree (realm_id)                                                                                       |
+| realm_localizations           | realm_localizations_pkey                             | CREATE UNIQUE INDEX realm_localizations_pkey ON public.realm_localizations USING btree (realm_id, locale)                                                                           |
+| realm_required_credential     | constraint_92                                        | CREATE UNIQUE INDEX constraint_92 ON public.realm_required_credential USING btree (realm_id, type)                                                                                  |
+| realm_smtp_config             | constraint_e                                         | CREATE UNIQUE INDEX constraint_e ON public.realm_smtp_config USING btree (realm_id, name)                                                                                           |
+| realm_supported_locales       | constr_realm_supported_locales                       | CREATE UNIQUE INDEX constr_realm_supported_locales ON public.realm_supported_locales USING btree (realm_id, value)                                                                  |
+| realm_supported_locales       | idx_realm_supp_local_realm                           | CREATE INDEX idx_realm_supp_local_realm ON public.realm_supported_locales USING btree (realm_id)                                                                                    |
+| redirect_uris                 | constraint_redirect_uris                             | CREATE UNIQUE INDEX constraint_redirect_uris ON public.redirect_uris USING btree (client_id, value)                                                                                 |
+| redirect_uris                 | idx_redir_uri_client                                 | CREATE INDEX idx_redir_uri_client ON public.redirect_uris USING btree (client_id)                                                                                                   |
+| required_action_config        | constraint_req_act_cfg_pk                            | CREATE UNIQUE INDEX constraint_req_act_cfg_pk ON public.required_action_config USING btree (required_action_id, name)                                                               |
+| required_action_provider      | constraint_req_act_prv_pk                            | CREATE UNIQUE INDEX constraint_req_act_prv_pk ON public.required_action_provider USING btree (id)                                                                                   |
+| required_action_provider      | idx_req_act_prov_realm                               | CREATE INDEX idx_req_act_prov_realm ON public.required_action_provider USING btree (realm_id)                                                                                       |
+| resource_attribute            | res_attr_pk                                          | CREATE UNIQUE INDEX res_attr_pk ON public.resource_attribute USING btree (id)                                                                                                       |
+| resource_policy               | constraint_farsrpp                                   | CREATE UNIQUE INDEX constraint_farsrpp ON public.resource_policy USING btree (resource_id, policy_id)                                                                               |
+| resource_policy               | idx_res_policy_policy                                | CREATE INDEX idx_res_policy_policy ON public.resource_policy USING btree (policy_id)                                                                                                |
+| resource_scope                | constraint_farsrsp                                   | CREATE UNIQUE INDEX constraint_farsrsp ON public.resource_scope USING btree (resource_id, scope_id)                                                                                 |
+| resource_scope                | idx_res_scope_scope                                  | CREATE INDEX idx_res_scope_scope ON public.resource_scope USING btree (scope_id)                                                                                                    |
+| resource_server               | pk_resource_server                                   | CREATE UNIQUE INDEX pk_resource_server ON public.resource_server USING btree (id)                                                                                                   |
+| resource_server_perm_ticket   | constraint_fapmt                                     | CREATE UNIQUE INDEX constraint_fapmt ON public.resource_server_perm_ticket USING btree (id)                                                                                         |
+| resource_server_perm_ticket   | uk_frsr6t700s9v50bu18ws5pmt                          | CREATE UNIQUE INDEX uk_frsr6t700s9v50bu18ws5pmt ON public.resource_server_perm_ticket USING btree (owner, requester, resource_server_id, resource_id, scope_id)                     |
+| resource_server_policy        | constraint_farsrp                                    | CREATE UNIQUE INDEX constraint_farsrp ON public.resource_server_policy USING btree (id)                                                                                             |
+| resource_server_policy        | idx_res_serv_pol_res_serv                            | CREATE INDEX idx_res_serv_pol_res_serv ON public.resource_server_policy USING btree (resource_server_id)                                                                            |
+| resource_server_policy        | uk_frsrpt700s9v50bu18ws5ha6                          | CREATE UNIQUE INDEX uk_frsrpt700s9v50bu18ws5ha6 ON public.resource_server_policy USING btree (name, resource_server_id)                                                             |
+| resource_server_resource      | constraint_farsr                                     | CREATE UNIQUE INDEX constraint_farsr ON public.resource_server_resource USING btree (id)                                                                                            |
+| resource_server_resource      | idx_res_srv_res_res_srv                              | CREATE INDEX idx_res_srv_res_res_srv ON public.resource_server_resource USING btree (resource_server_id)                                                                            |
+| resource_server_resource      | uk_frsr6t700s9v50bu18ws5ha6                          | CREATE UNIQUE INDEX uk_frsr6t700s9v50bu18ws5ha6 ON public.resource_server_resource USING btree (name, owner, resource_server_id)                                                    |
+| resource_server_scope         | constraint_farsrs                                    | CREATE UNIQUE INDEX constraint_farsrs ON public.resource_server_scope USING btree (id)                                                                                              |
+| resource_server_scope         | idx_res_srv_scope_res_srv                            | CREATE INDEX idx_res_srv_scope_res_srv ON public.resource_server_scope USING btree (resource_server_id)                                                                             |
+| resource_server_scope         | uk_frsrst700s9v50bu18ws5ha6                          | CREATE UNIQUE INDEX uk_frsrst700s9v50bu18ws5ha6 ON public.resource_server_scope USING btree (name, resource_server_id)                                                              |
+| resource_uris                 | constraint_resour_uris_pk                            | CREATE UNIQUE INDEX constraint_resour_uris_pk ON public.resource_uris USING btree (resource_id, value)                                                                              |
+| role_attribute                | constraint_role_attribute_pk                         | CREATE UNIQUE INDEX constraint_role_attribute_pk ON public.role_attribute USING btree (id)                                                                                          |
+| role_attribute                | idx_role_attribute                                   | CREATE INDEX idx_role_attribute ON public.role_attribute USING btree (role_id)                                                                                                      |
+| scope_mapping                 | constraint_81                                        | CREATE UNIQUE INDEX constraint_81 ON public.scope_mapping USING btree (client_id, role_id)                                                                                          |
+| scope_mapping                 | idx_scope_mapping_role                               | CREATE INDEX idx_scope_mapping_role ON public.scope_mapping USING btree (role_id)                                                                                                   |
+| scope_policy                  | constraint_farsrsps                                  | CREATE UNIQUE INDEX constraint_farsrsps ON public.scope_policy USING btree (scope_id, policy_id)                                                                                    |
+| scope_policy                  | idx_scope_policy_policy                              | CREATE INDEX idx_scope_policy_policy ON public.scope_policy USING btree (policy_id)                                                                                                 |
+| tenantid_citycode             | pk_tenantid_citycode                                 | CREATE UNIQUE INDEX pk_tenantid_citycode ON public.tenantid_citycode USING btree (id)                                                                                               |
+| tenantid_citycode             | uk_tenantid                                          | CREATE UNIQUE INDEX uk_tenantid ON public.tenantid_citycode USING btree (tenantid)                                                                                                  |
+| uploaded_files                | idx_uploaded_files_deleted_at                        | CREATE INDEX idx_uploaded_files_deleted_at ON public.uploaded_files USING btree (deleted_at)                                                                                        |
+| uploaded_files                | uploaded_files_pkey                                  | CREATE UNIQUE INDEX uploaded_files_pkey ON public.uploaded_files USING btree (id)                                                                                                   |
+| user_attribute                | constraint_user_attribute_pk                         | CREATE UNIQUE INDEX constraint_user_attribute_pk ON public.user_attribute USING btree (id)                                                                                          |
+| user_attribute                | idx_user_attribute                                   | CREATE INDEX idx_user_attribute ON public.user_attribute USING btree (user_id)                                                                                                      |
+| user_attribute                | idx_user_attribute_name                              | CREATE INDEX idx_user_attribute_name ON public.user_attribute USING btree (name, value)                                                                                             |
+| user_consent                  | constraint_grntcsnt_pm                               | CREATE UNIQUE INDEX constraint_grntcsnt_pm ON public.user_consent USING btree (id)                                                                                                  |
+| user_consent                  | idx_user_consent                                     | CREATE INDEX idx_user_consent ON public.user_consent USING btree (user_id)                                                                                                          |
+| user_consent                  | uk_jkuwuvd56ontgsuhogm8uewrt                         | CREATE UNIQUE INDEX uk_jkuwuvd56ontgsuhogm8uewrt ON public.user_consent USING btree (client_id, client_storage_provider, external_client_id, user_id)                               |
+| user_consent_client_scope     | constraint_grntcsnt_clsc_pm                          | CREATE UNIQUE INDEX constraint_grntcsnt_clsc_pm ON public.user_consent_client_scope USING btree (user_consent_id, scope_id)                                                         |
+| user_consent_client_scope     | idx_usconsent_clscope                                | CREATE INDEX idx_usconsent_clscope ON public.user_consent_client_scope USING btree (user_consent_id)                                                                                |
+| user_entity                   | constraint_fb                                        | CREATE UNIQUE INDEX constraint_fb ON public.user_entity USING btree (id)                                                                                                            |
+| user_entity                   | idx_user_email                                       | CREATE INDEX idx_user_email ON public.user_entity USING btree (email)                                                                                                               |
+| user_entity                   | uk_dykn684sl8up1crfei6eckhd7                         | CREATE UNIQUE INDEX uk_dykn684sl8up1crfei6eckhd7 ON public.user_entity USING btree (realm_id, email_constraint)                                                                     |
+| user_entity                   | uk_ru8tt6t700s9v50bu18ws5ha6                         | CREATE UNIQUE INDEX uk_ru8tt6t700s9v50bu18ws5ha6 ON public.user_entity USING btree (realm_id, username)                                                                             |
+| user_federation_config        | constraint_f9                                        | CREATE UNIQUE INDEX constraint_f9 ON public.user_federation_config USING btree (user_federation_provider_id, name)                                                                  |
+| user_federation_mapper        | constraint_fedmapperpm                               | CREATE UNIQUE INDEX constraint_fedmapperpm ON public.user_federation_mapper USING btree (id)                                                                                        |
+| user_federation_mapper        | idx_usr_fed_map_fed_prv                              | CREATE INDEX idx_usr_fed_map_fed_prv ON public.user_federation_mapper USING btree (federation_provider_id)                                                                          |
+| user_federation_mapper        | idx_usr_fed_map_realm                                | CREATE INDEX idx_usr_fed_map_realm ON public.user_federation_mapper USING btree (realm_id)                                                                                          |
+| user_federation_mapper_config | constraint_fedmapper_cfg_pm                          | CREATE UNIQUE INDEX constraint_fedmapper_cfg_pm ON public.user_federation_mapper_config USING btree (user_federation_mapper_id, name)                                               |
+| user_federation_provider      | constraint_5c                                        | CREATE UNIQUE INDEX constraint_5c ON public.user_federation_provider USING btree (id)                                                                                               |
+| user_federation_provider      | idx_usr_fed_prv_realm                                | CREATE INDEX idx_usr_fed_prv_realm ON public.user_federation_provider USING btree (realm_id)                                                                                        |
+| user_group_membership         | constraint_user_group                                | CREATE UNIQUE INDEX constraint_user_group ON public.user_group_membership USING btree (group_id, user_id)                                                                           |
+| user_group_membership         | idx_user_group_mapping                               | CREATE INDEX idx_user_group_mapping ON public.user_group_membership USING btree (user_id)                                                                                           |
+| user_required_action          | constraint_required_action                           | CREATE UNIQUE INDEX constraint_required_action ON public.user_required_action USING btree (required_action, user_id)                                                                |
+| user_required_action          | idx_user_reqactions                                  | CREATE INDEX idx_user_reqactions ON public.user_required_action USING btree (user_id)                                                                                               |
+| user_role_mapping             | constraint_c                                         | CREATE UNIQUE INDEX constraint_c ON public.user_role_mapping USING btree (role_id, user_id)                                                                                         |
+| user_role_mapping             | idx_user_role_mapping                                | CREATE INDEX idx_user_role_mapping ON public.user_role_mapping USING btree (user_id)                                                                                                |
+| user_session                  | constraint_57                                        | CREATE UNIQUE INDEX constraint_57 ON public.user_session USING btree (id)                                                                                                           |
+| user_session_note             | constraint_usn_pk                                    | CREATE UNIQUE INDEX constraint_usn_pk ON public.user_session_note USING btree (user_session, name)                                                                                  |
+| username_login_failure        | CONSTRAINT_17-2                                      | CREATE UNIQUE INDEX "CONSTRAINT_17-2" ON public.username_login_failure USING btree (realm_id, username)                                                                             |
+| web_origins                   | constraint_web_origins                               | CREATE UNIQUE INDEX constraint_web_origins ON public.web_origins USING btree (client_id, value)                                                                                     |
+| web_origins                   | idx_web_orig_client                                  | CREATE INDEX idx_web_orig_client ON public.web_origins USING btree (client_id)                                                                                                      |
+
+* Sample Queries
+
+** Count Records per Entity
+
+#+begin_src sql :results table
+SELECT
+    relname AS table_name,
+    n_live_tup AS approximate_row_count
+FROM pg_stat_user_tables
+WHERE n_live_tup > 0
+ORDER BY n_live_tup DESC
+LIMIT 20;
+#+end_src
+
+#+RESULTS:
+| table_name               | approximate_row_count |
+|--------------------------+-----------------------|
+| protocol_mapper_config   |                   309 |
+| client_scope_client      |                   120 |
+| databasechangelog        |                   101 |
+| authentication_execution |                    94 |
+| E_vertex_property        |                    81 |
+| V_property               |                    81 |
+| keycloak_role            |                    80 |
+| composite_role           |                    76 |
+| realm_attribute          |                    71 |
+| component_config         |                    62 |
+| flyway_schema_history    |                    60 |
+| protocol_mapper          |                    59 |
+| client_attributes        |                    49 |
+| client_scope_attributes  |                    48 |
+| authentication_flow      |                    40 |
+| _prisma_migrations       |                    25 |
+| component                |                    22 |
+| client_scope             |                    18 |
+| default_client_scope     |                    18 |
+| client                   |                    16 |
+
+** Recent Activity (if audit tables exist)
+
+#+begin_src sql :results table
+SELECT
+    table_name
+FROM information_schema.tables
+WHERE table_schema = 'public'
+  AND (table_name LIKE '%audit%' OR table_name LIKE '%log%' OR table_name LIKE '%history%')
+ORDER BY table_name;
+#+end_src
+
+#+RESULTS:
+| table_name             |
+|------------------------|
+| databasechangelog      |
+| databasechangeloglock  |
+| flyway_schema_history  |
+| username_login_failure |
+
+* Database Statistics
+
+** Database Size
+
+#+begin_src sql :results table
+SELECT
+    pg_database.datname AS database_name,
+    pg_size_pretty(pg_database_size(pg_database.datname)) AS size
+FROM pg_database
+WHERE datname = 'registry';
+#+end_src
+
+#+RESULTS:
+| database_name | size  |
+|---------------+-------|
+| registry      | 15 MB |
+
+** Connection Statistics
+
+#+begin_src sql :results table
+SELECT
+    datname,
+    numbackends AS active_connections,
+    xact_commit AS transactions_committed,
+    xact_rollback AS transactions_rolled_back
+FROM pg_stat_database
+WHERE datname = 'registry';
+#+end_src
+
+#+RESULTS:
+| datname  | active_connections | transactions_committed | transactions_rolled_back |
+|----------+--------------------+------------------------+--------------------------|
+| registry |                 42 |                 103876 |                      210 |
+
+* Useful Commands
+
+** Connect via psql (shell)
+
+#+begin_src shell :results output
+# Connect to the PostgreSQL container
+docker exec -it sunbird-rc-core-db-1 psql -U postgres -d registry
+#+end_src
+
+** Export Table to CSV
+
+#+begin_src shell :results output :var table_name="MY_REGISTRY"
+docker exec -it sunbird-rc-core-db-1 psql -U postgres -d registry -c "COPY (SELECT * FROM MY_REGISTRY) TO STDOUT WITH CSV HEADER"
+#+end_src
+
+* Local Variables
+
+# Local Variables:
+# org-confirm-babel-evaluate: nil
+# End:
