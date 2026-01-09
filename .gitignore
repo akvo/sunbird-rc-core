@@ -98,3 +98,10 @@ keys.txt
 
 # Claude Code
 .claude/
+
+# Build artifacts
+java/docker-build/
+
+# Demo/temp files
+water_facilities.csv
+*.org

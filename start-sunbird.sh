@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# Enable ID generation for WaterFacility wfId
+export IDGEN_ENABLED=true
+
 echo "Starting Sunbird RC..."
 docker compose up -d
 

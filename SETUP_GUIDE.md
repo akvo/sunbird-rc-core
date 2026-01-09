@@ -6,6 +6,8 @@ This document chronicles the complete setup process for Sunbird RC, including al
 
 ## Table of Contents
 - [Initial Setup](#initial-setup)
+- [Fork Improvements](#fork-improvements)
+- [Additional Changes](#additional-changes)
 - [Challenges and Solutions](#challenges-and-solutions)
 - [Admin Portal Configuration](#admin-portal-configuration)
 - [Final Configuration](#final-configuration)
@@ -112,6 +114,208 @@ This fork includes several improvements over the original repository:
 - Keycloak realm configuration
 - Schema creation workflow
 - Troubleshooting common issues
+
+---
+
+## Additional Changes
+
+### Custom WaterFacility Schema
+
+A custom `WaterFacility` schema has been added to demonstrate registry capabilities with Indonesian administrative location structure.
+
+**Schema Location**: `java/registry/src/main/resources/public/_schemas/WaterFacility.json`
+
+**Key Features**:
+- Nested `location` object with `province`, `district`, `village`
+- Enumerated facility types (Water Treatment Plant, Reservoir, Pumping Station, Distribution Center, Desalination Plant)
+- Auto-generated `wfId` unique identifier
+
+**Schema Structure**:
+```json
+{
+  "properties": {
+    "wfId": { "type": "string", "description": "System-generated unique ID" },
+    "wfName": { "type": "string" },
+    "typeOfWaterFacility": { "type": "string", "enum": [...] },
+    "location": {
+      "type": "object",
+      "properties": {
+        "province": { "type": "string" },
+        "district": { "type": "string" },
+        "village": { "type": "string" }
+      }
+    },
+    "institution": { "type": "string" },
+    "foundingDate": { "type": "string", "format": "date" },
+    "waterCapacity": { "type": "number", "maximum": 1000000 }
+  }
+}
+```
+
+### Custom wfId Generation
+
+**Problem**: Default Sunbird RC ID generation uses external id-gen-service with sequential IDs, which doesn't provide meaningful, deterministic identifiers.
+
+**Solution**: Implemented custom `IIdGenService` that generates deterministic wfId values based on entity attributes.
+
+**wfId Format**: `WF-<PROVINCE_ABBR>-<DISTRICT_ABBR>-<TYPE_CODE>-<HASH>`
+
+**Example**: `WF-JAW-KOT-WTP-66EB8D`
+
+**Components**:
+| Component | Description | Example |
+|-----------|-------------|---------|
+| `WF-` | Fixed prefix | WF- |
+| `PROVINCE_ABBR` | First 3 alphanumeric chars of province (uppercase) | JAW (Jawa Barat) |
+| `DISTRICT_ABBR` | First 3 alphanumeric chars of district (uppercase) | KOT (Kota Bandung) |
+| `TYPE_CODE` | Facility type abbreviation | WTP, RES, PS, DC, DES |
+| `HASH` | 6-char SHA-256 hash of normalized attributes | 66EB8D |
+
+**Facility Type Codes**:
+- `WTP` - Water Treatment Plant
+- `RES` - Reservoir
+- `PS` - Pumping Station
+- `DC` - Distribution Center
+- `DES` - Desalination Plant
+
+**Hash Inputs** (normalized to lowercase, trimmed):
+- wfName
+- typeOfWaterFacility
+- location.province
+- location.district
+- location.village
+
+### Duplicate Rejection
+
+**Problem**: The `uniqueIndexFields` constraint is checked before ID generation, so it can't prevent duplicates based on generated IDs.
+
+**Solution**: Application-level duplicate checking in `WaterFacilityIdGenService` that queries for existing entities with the same wfId before allowing creation.
+
+**Behavior**:
+- First creation: **SUCCESS** - Facility created with generated wfId
+- Duplicate attempt (same name, type, location): **REJECTED** with error message
+
+**Error Response**:
+```json
+{
+  "params": {
+    "status": "UNSUCCESSFUL",
+    "errmsg": "Duplicate WaterFacility: A facility with wfId 'WF-JAW-KOT-WTP-66EB8D' already exists. Facilities with the same name, type, and location are not allowed."
+  }
+}
+```
+
+### Implementation Files
+
+Three new Java files were created for the custom ID generation:
+
+**1. EntityDataHolder.java**
+```
+java/registry/src/main/java/dev/sunbirdrc/registry/service/impl/EntityDataHolder.java
+```
+ThreadLocal holder for passing entity data between AOP aspect and ID generation service.
+
+**2. EntityDataCaptureAspect.java**
+```
+java/registry/src/main/java/dev/sunbirdrc/registry/aspect/EntityDataCaptureAspect.java
+```
+Spring AOP aspect that intercepts `RegistryServiceImpl.addEntity()` to capture entity data before ID generation.
+
+**3. WaterFacilityIdGenService.java**
+```
+java/registry/src/main/java/dev/sunbirdrc/registry/service/impl/WaterFacilityIdGenService.java
+```
+Custom `IIdGenService` implementation with `@Primary` annotation that:
+- Generates deterministic wfId based on entity attributes
+- Checks for duplicates before allowing creation
+- Uses `@Lazy` injection to avoid circular dependencies
+
+### Building Custom Registry
+
+After modifying Java files, use the build script:
+
+```bash
+# Automated build script (recommended)
+./build-registry.sh
+```
+
+This script will:
+1. Build the JAR using Maven
+2. Build the Docker image (`sunbird-rc-core:local`)
+3. Optionally restart the registry service
+
+**Manual build** (if needed):
+```bash
+# Build the JAR
+cd java && ./mvnw package -DskipTests -pl registry -am
+
+# Build Docker image
+docker build -t sunbird-rc-core:local -f java/registry/Dockerfile java/registry
+
+# Restart registry
+export IDGEN_ENABLED=true && docker compose up -d registry
+```
+
+The `docker-compose.yml` is configured to use the local image:
+```yaml
+registry:
+  image: sunbird-rc-core:local
+```
+
+### Testing wfId Generation
+
+```bash
+# Create a WaterFacility
+curl -X POST http://localhost:8081/api/v1/WaterFacility \
+  -H "Content-Type: application/json" \
+  -d '{
+    "wfName": "IPAM Dago Pakar",
+    "typeOfWaterFacility": "Water Treatment Plant",
+    "location": {
+      "province": "Jawa Barat",
+      "district": "Kota Bandung",
+      "village": "Dago"
+    },
+    "institution": "PDAM Tirtawening",
+    "foundingDate": "2018-06-15",
+    "waterCapacity": 50000
+  }'
+
+# Verify the generated wfId
+curl http://localhost:8081/api/v1/WaterFacility | jq '.data[0].wfId'
+# Output: "WF-JAW-KOT-WTP-66EB8D"
+
+# Attempt duplicate (will be rejected)
+curl -X POST http://localhost:8081/api/v1/WaterFacility \
+  -H "Content-Type: application/json" \
+  -d '{
+    "wfName": "IPAM Dago Pakar",
+    "typeOfWaterFacility": "Water Treatment Plant",
+    "location": {
+      "province": "Jawa Barat",
+      "district": "Kota Bandung",
+      "village": "Dago"
+    },
+    "institution": "Different Institution",
+    "foundingDate": "2024-01-01",
+    "waterCapacity": 99999
+  }'
+# Response: status "UNSUCCESSFUL" with duplicate error
+```
+
+### Jupyter Notebook Demo
+
+A comprehensive demo notebook is available:
+
+**File**: `sunbird-rc-water-facility-demo.ipynb`
+
+**Features**:
+- CRUD operations for WaterFacility
+- wfId generation demonstration
+- Duplicate rejection testing
+- Bulk creation with wfId display
+- Export to CSV
+- Indonesian test data (Jawa Barat, Banten, DKI Jakarta, Bali)
 
 ---
 
@@ -761,10 +965,11 @@ ports:
 
 ---
 
-**Document Version**: 1.1
-**Last Updated**: 2025-12-02
+**Document Version**: 1.2
+**Last Updated**: 2026-01-09
 **Tested With**: Sunbird RC v2.0.2
 
 ### Changelog
+- **v1.2** (2026-01-09): Added WaterFacility schema with custom wfId generation, duplicate rejection, AOP-based entity data capture, and Jupyter notebook demo
 - **v1.1** (2025-12-02): Added automated startup script, updated vault unsealing documentation, added known issues section
 - **v1.0** (2025-11-27): Initial comprehensive setup guide

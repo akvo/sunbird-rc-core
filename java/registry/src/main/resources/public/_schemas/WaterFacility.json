@@ -1,13 +1,13 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema",
   "type": "object",
+  "title": "WaterFacility",
   "properties": {
     "WaterFacility": {
       "$ref": "#/definitions/WaterFacility"
     }
   },
   "required": ["WaterFacility"],
-  "title": "WaterFacility",
   "definitions": {
     "WaterFacility": {
       "$id": "#/properties/WaterFacility",
@@ -16,33 +16,57 @@
       "description": "Schema for water facilities",
       "required": [
         "wfName",
-        "wfId",
         "typeOfWaterFacility",
-        "address",
+        "location",
         "institution",
         "foundingDate"
       ],
       "properties": {
+        "wfId": {
+          "type": "string",
+          "description": "System-generated unique Water Facility ID"
+        },
         "wfName": {
           "type": "string",
           "description": "Name of the Water Facility"
         },
-        "wfId": {
-          "type": "string",
-          "description": "Unique identification number"
-        },
         "typeOfWaterFacility": {
           "type": "string",
           "description": "Type of the Water Facility",
-          "enum": ["Water Treatment Plant", "Reservoir", "Pumping Station", "Distribution Center", "Desalination Plant"]
+          "enum": [
+            "Water Treatment Plant",
+            "Reservoir",
+            "Pumping Station",
+            "Distribution Center",
+            "Desalination Plant"
+          ]
+        },
+        "location": {
+          "type": "object",
+          "description": "Administrative location of the facility",
+          "required": ["province", "district", "village"],
+          "properties": {
+            "province": {
+              "type": "string",
+              "description": "Province name"
+            },
+            "district": {
+              "type": "string",
+              "description": "District / Regency name"
+            },
+            "village": {
+              "type": "string",
+              "description": "Village / Sub-district name"
+            }
+          }
         },
         "address": {
           "type": "string",
-          "description": "Address of the Water Facility"
+          "description": "Free-text address (optional)"
         },
         "institution": {
           "type": "string",
-          "description": "Name of the institution"
+          "description": "Responsible institution"
         },
         "foundingDate": {
           "type": "string",
@@ -54,10 +78,6 @@
           "minimum": 0,
           "maximum": 1000000,
           "description": "Water capacity in cubic meters"
-        },
-        "certificateNumber": {
-          "type": "string",
-          "description": "Unique certificate number"
         }
       }
     }
@@ -65,8 +85,21 @@
   "_osConfig": {
     "privateFields": [],
     "signedFields": [],
-    "indexFields": ["wfId", "certificateNumber"],
-    "uniqueIndexFields": ["certificateNumber"],
+    "indexFields": [
+      "wfId",
+      "wfName",
+      "typeOfWaterFacility",
+      "location.province",
+      "location.district"
+    ],
+    "uniqueIndexFields": ["wfId"],
+    "uniqueIdentifierFields": [
+      {
+        "field": "/wfId",
+        "idName": "waterfacility.wfId",
+        "format": "WF-[HASH]"
+      }
+    ],
     "systemFields": [
       "osCreatedAt",
       "osUpdatedAt",
