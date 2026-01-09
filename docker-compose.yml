@@ -43,7 +43,7 @@ services:
       timeout: 5s
       retries: 5
   registry:
-    image: ghcr.io/sunbird-rc/sunbird-rc-core:${RELEASE_VERSION}
+    image: sunbird-rc-core:local
     volumes:
       - ./${SCHEMA_DIR-java/registry/src/main/resources/public/_schemas}:/home/sunbirdrc/config/public/_schemas
       - ./${VIEW_DIR-java/registry/src/main/resources/views}:/home/sunbirdrc/config/views/
