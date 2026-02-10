@@ -1,7 +1,31 @@
-FROM ghcr.io/sunbird-rc/sunbird-rc-core:v2.0.2
+# Stage 1: Build the full registry JAR with custom code
+FROM eclipse-temurin:8-jdk AS builder
+WORKDIR /app
 
-# Copy schemas
-COPY java/registry/src/main/resources/public/_schemas/ /home/sunbirdrc/config/public/_schemas/
+COPY java/ java/
 
-# Copy views
-COPY java/registry/src/main/resources/views/ /home/sunbirdrc/config/views/
+# Configure dependencies (same as configure-dependencies.sh)
+RUN cp java/registry/src/main/resources/frame.json.sample java/registry/src/main/resources/frame.json && \
+    cp java/claim/src/main/resources/application.properties.sample java/claim/src/main/resources/application.properties
+
+# Build with Maven (skip tests for CI speed)
+RUN cd java && chmod +x mvnw && ./mvnw clean install -DskipTests -q
+
+# Extract the Spring Boot JAR for exploded layout
+RUN mkdir /extract && cd /extract && jar xvf /app/java/registry/target/registry.jar
+
+# Stage 2: Runtime image (matches upstream java/Dockerfile pattern)
+FROM eclipse-temurin:8-jre
+
+COPY --from=builder /extract/BOOT-INF/lib /home/sunbirdrc/BOOT-INF/lib
+COPY --from=builder /extract/META-INF /home/sunbirdrc/META-INF
+COPY --from=builder /extract/org /home/sunbirdrc/org
+COPY --from=builder /extract/BOOT-INF/classes /home/sunbirdrc/BOOT-INF/classes
+RUN cp /home/sunbirdrc/BOOT-INF/classes/frame.json.sample /home/sunbirdrc/BOOT-INF/classes/frame.json
+
+# Copy schemas and views
+RUN mkdir -p /home/sunbirdrc/config/public/_schemas /home/sunbirdrc/config/views
+COPY --from=builder /app/java/registry/src/main/resources/public/_schemas/ /home/sunbirdrc/config/public/_schemas/
+COPY --from=builder /app/java/registry/src/main/resources/views/ /home/sunbirdrc/config/views/
+
+CMD ["java", "-Xms1024m", "-Xmx2048m", "-XX:+UseG1GC", "-Dserver.port=8081", "-cp", "/home/sunbirdrc/config:/home/sunbirdrc", "org.springframework.boot.loader.JarLauncher"]

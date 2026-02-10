@@ -294,6 +294,15 @@ setup_keycloak() {
         return 0
     fi
 
+    # Disable SSL requirement on realm (TLS is terminated at GCP load balancer)
+    log_info "Setting sslRequired=none on sunbird-rc realm..."
+    kube_curl curl -s -X PUT \
+        "http://keycloak:8080/auth/admin/realms/sunbird-rc" \
+        -H "Authorization: Bearer $ADMIN_TOKEN" \
+        -H "Content-Type: application/json" \
+        -d '{"sslRequired": "none"}' > /dev/null
+    log_info "Realm SSL requirement disabled"
+
     log_info "Keycloak setup complete"
 
     # Restart registry to pick up Keycloak
