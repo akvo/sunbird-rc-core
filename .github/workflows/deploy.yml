@@ -1,0 +1,72 @@
+name: Deploy to Test Cluster
+
+on:
+  push:
+    branches:
+      - main
+
+concurrency:
+  group: deploy-to-test
+  cancel-in-progress: false
+
+jobs:
+  build-push:
+    name: Build and Push to Registry
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          path: src
+
+      - name: Checkout Akvo composite actions
+        uses: actions/checkout@v4
+        with:
+          repository: akvo/composite-actions
+          token: ${{ secrets.GH_PAT }}
+          path: composite-actions
+          ref: 0.0.10
+
+      - name: Docker Build Registry
+        uses: ./composite-actions/.github/actions/docker-build
+        with:
+          app-name: "sunbird-rc"
+          service-name: "registry"
+          dockerfile-location: "Dockerfile.registry"
+          cluster-name: "test"
+
+      - name: Docker Push Registry
+        uses: ./composite-actions/.github/actions/docker-push
+        with:
+          app-name: "sunbird-rc"
+          service-name: "registry"
+          gcloud-sa: ${{ secrets.GCLOUD_SERVICE_ACCOUNT_REGISTRY }}
+          cluster-name: "test"
+
+  rollout:
+    name: Rollout to Test Cluster
+    needs: build-push
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          path: src
+
+      - name: Checkout Akvo composite actions
+        uses: actions/checkout@v4
+        with:
+          repository: akvo/composite-actions
+          token: ${{ secrets.GH_PAT }}
+          path: composite-actions
+          ref: 0.0.10
+
+      - name: Rollout Registry
+        uses: ./composite-actions/.github/actions/k8s-rollout
+        with:
+          app-name: "sunbird-rc"
+          deployment-name: "registry"
+          container-name: "registry"
+          cluster-name: "test"
+          namespace-name: "sunbird-rc-namespace"
+          gcloud-sa: ${{ secrets.GCLOUD_SERVICE_ACCOUNT_K8S }}

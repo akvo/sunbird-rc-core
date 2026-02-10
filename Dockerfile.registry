@@ -1,0 +1,7 @@
+FROM ghcr.io/sunbird-rc/sunbird-rc-core:v2.0.2
+
+# Copy schemas
+COPY java/registry/src/main/resources/public/_schemas/ /home/sunbirdrc/config/public/_schemas/
+
+# Copy views
+COPY java/registry/src/main/resources/views/ /home/sunbirdrc/config/views/

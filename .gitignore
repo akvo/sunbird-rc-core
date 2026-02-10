@@ -95,6 +95,9 @@ keycloak-mobile*.jar
 # Sensitive files
 keys.txt
 .env
+k8s/vault-keys.json
+k8s/credentials.json
+configure-vault-keys.json
 
 # Claude Code
 .claude/
