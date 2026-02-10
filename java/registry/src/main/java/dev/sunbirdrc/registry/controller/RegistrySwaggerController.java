@@ -90,7 +90,9 @@ public class RegistrySwaggerController {
         doc.set("paths", paths);
         doc.set("definitions", definitions);
         doc.set("host", getHost(request));
-        doc.set("schemes", JsonNodeFactory.instance.arrayNode().add(request.getScheme()));
+        String host = getHost(request).asText();
+        String scheme = host.contains("akvotest.org") ? "https" : request.getScheme();
+        doc.set("schemes", JsonNodeFactory.instance.arrayNode().add(scheme));
         doc.set("info", getApiInfo());
         for (String entityName : entities) {
             if (Character.isUpperCase(entityName.charAt(0))) {
