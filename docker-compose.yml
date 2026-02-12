@@ -127,6 +127,7 @@ services:
       - redis_host=redis
       - redis_port=6379
       - manager_type=${MANAGER_TYPE-DefinitionsManager}
+      - hard_delete_enabled=${HARD_DELETE_ENABLED-true}
       - expand_reference=${EXPAND_REFERENCE-false}
       - swagger_title=${SWAGGER_TITLE-Sunbird Registry and Credential}
       - notification_async_enabled=${NOTIFICATION_ASYNC_ENABLED-false}

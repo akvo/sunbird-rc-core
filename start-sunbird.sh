@@ -10,9 +10,12 @@ echo "Waiting for vault to be ready..."
 sleep 10
 
 echo "Unsealing vault..."
-docker exec sunbird-rc-core-vault-1 vault operator unseal 4k3nGuJc9+BkmVNTeRPdflSySkwKrBSI9DDN7cRnYkwP
-docker exec sunbird-rc-core-vault-1 vault operator unseal 59lgXRIPxxa6IqSusf3GKNVl/XTmpy/h3VIXwV0+f4fz
-docker exec sunbird-rc-core-vault-1 vault operator unseal rMKPGLIMH1oCCUcszfNh2TTA9yIh3uuUW9pwEjnasQV1
+KEY1=$(sed -n 's/Unseal Key 1: \(.*\)/\1/p' keys.txt)
+KEY2=$(sed -n 's/Unseal Key 2: \(.*\)/\1/p' keys.txt)
+KEY3=$(sed -n 's/Unseal Key 3: \(.*\)/\1/p' keys.txt)
+docker exec sunbird-rc-core-vault-1 vault operator unseal "$KEY1"
+docker exec sunbird-rc-core-vault-1 vault operator unseal "$KEY2"
+docker exec sunbird-rc-core-vault-1 vault operator unseal "$KEY3"
 
 echo "Waiting for vault to become healthy..."
 for i in {1..30}; do
