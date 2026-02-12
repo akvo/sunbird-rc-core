@@ -1,0 +1,49 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: claim-ms
+  namespace: sunbird-rc-namespace
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: claim-ms
+  template:
+    metadata:
+      labels:
+        app: claim-ms
+    spec:
+      containers:
+        - name: claim-ms
+          image: ghcr.io/sunbird-rc/sunbird-rc-claim-ms:v2.0.2
+          ports:
+            - containerPort: 8082
+          env:
+            - name: connectionInfo_uri
+              value: "jdbc:postgresql://db:5432/registry"
+            - name: connectionInfo_username
+              value: "postgres"
+            - name: connectionInfo_password
+              value: "postgres"
+            - name: sunbirdrc_url
+              value: "http://registry:8081"
+            - name: uuid-property-name
+              value: "osid"
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8082
+            initialDelaySeconds: 30
+            periodSeconds: 10
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: claim-ms
+  namespace: sunbird-rc-namespace
+spec:
+  selector:
+    app: claim-ms
+  ports:
+    - port: 8082
+      targetPort: 8082

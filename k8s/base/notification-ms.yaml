@@ -1,0 +1,43 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: notification-ms
+  namespace: sunbird-rc-namespace
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: notification-ms
+  template:
+    metadata:
+      labels:
+        app: notification-ms
+    spec:
+      containers:
+        - name: notification-ms
+          image: ghcr.io/sunbird-rc/sunbird-rc-notification-service:v2.0.2
+          ports:
+            - containerPort: 8765
+          env:
+            - name: TRACK_NOTIFICATIONS
+              value: "false"
+            - name: KAFKA_BOOTSTRAP_SERVERS
+              value: "kafka:9092"
+          readinessProbe:
+            httpGet:
+              path: /notification-service/v1/health
+              port: 8765
+            initialDelaySeconds: 30
+            periodSeconds: 10
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: notification-ms
+  namespace: sunbird-rc-namespace
+spec:
+  selector:
+    app: notification-ms
+  ports:
+    - port: 8765
+      targetPort: 8765

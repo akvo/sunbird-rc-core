@@ -1,0 +1,113 @@
+# Vault Auto-Unseal CronJob
+#
+# This CronJob checks Vault status every minute and unseals if needed.
+# It requires the vault-unseal-keys secret to be created first.
+#
+# Create the secret with:
+#   kubectl create secret generic vault-unseal-keys \
+#     --from-literal=key1=<UNSEAL_KEY_1> \
+#     --from-literal=key2=<UNSEAL_KEY_2> \
+#     --from-literal=key3=<UNSEAL_KEY_3> \
+#     -n sunbird-rc
+#
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: vault-auto-unseal
+  namespace: sunbird-rc-namespace
+spec:
+  schedule: "* * * * *"  # Every minute
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 1
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          serviceAccountName: vault-unseal
+          containers:
+            - name: unseal
+              image: bitnami/kubectl:latest
+              command:
+                - /bin/sh
+                - -c
+                - |
+                  # Check if vault is sealed using vault status exit code
+                  # Exit code 0 = unsealed, 1 = error, 2 = sealed
+                  kubectl exec -n sunbird-rc-namespace deploy/vault -- vault status > /dev/null 2>&1
+                  EXIT_CODE=$?
+
+                  if [ "$EXIT_CODE" = "2" ]; then
+                    echo "Vault is sealed (exit code 2), unsealing..."
+
+                    kubectl exec -n sunbird-rc-namespace deploy/vault -- vault operator unseal "$UNSEAL_KEY_1" || true
+                    kubectl exec -n sunbird-rc-namespace deploy/vault -- vault operator unseal "$UNSEAL_KEY_2" || true
+                    kubectl exec -n sunbird-rc-namespace deploy/vault -- vault operator unseal "$UNSEAL_KEY_3" || true
+
+                    # Verify unseal
+                    kubectl exec -n sunbird-rc-namespace deploy/vault -- vault status > /dev/null 2>&1
+                    FINAL_CODE=$?
+                    if [ "$FINAL_CODE" = "0" ]; then
+                      echo "Unseal complete - Vault is now unsealed"
+                    else
+                      echo "Warning: Vault may still be sealed (exit code: $FINAL_CODE)"
+                    fi
+                  elif [ "$EXIT_CODE" = "0" ]; then
+                    echo "Vault is already unsealed"
+                  else
+                    echo "Error checking vault status (exit code: $EXIT_CODE)"
+                  fi
+              env:
+                - name: UNSEAL_KEY_1
+                  valueFrom:
+                    secretKeyRef:
+                      name: vault-unseal-keys
+                      key: key1
+                - name: UNSEAL_KEY_2
+                  valueFrom:
+                    secretKeyRef:
+                      name: vault-unseal-keys
+                      key: key2
+                - name: UNSEAL_KEY_3
+                  valueFrom:
+                    secretKeyRef:
+                      name: vault-unseal-keys
+                      key: key3
+          restartPolicy: OnFailure
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: vault-unseal
+  namespace: sunbird-rc-namespace
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: vault-unseal
+  namespace: sunbird-rc-namespace
+rules:
+  - apiGroups: [""]
+    resources: ["pods"]
+    verbs: ["get", "list"]
+  - apiGroups: [""]
+    resources: ["pods/exec"]
+    verbs: ["create"]
+  - apiGroups: ["apps"]
+    resources: ["deployments"]
+    verbs: ["get", "list"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: vault-unseal
+  namespace: sunbird-rc-namespace
+subjects:
+  - kind: ServiceAccount
+    name: vault-unseal
+    namespace: sunbird-rc-namespace
+roleRef:
+  kind: Role
+  name: vault-unseal
+  apiGroup: rbac.authorization.k8s.io

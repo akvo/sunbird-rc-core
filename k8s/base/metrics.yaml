@@ -1,0 +1,87 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: clickhouse
+  namespace: sunbird-rc-namespace
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: clickhouse
+  template:
+    metadata:
+      labels:
+        app: clickhouse
+    spec:
+      containers:
+        - name: clickhouse
+          image: clickhouse/clickhouse-server:23.4.2.11-alpine
+          ports:
+            - containerPort: 9000
+            - containerPort: 8123
+          readinessProbe:
+            httpGet:
+              path: /ping
+              port: 8123
+            initialDelaySeconds: 10
+            periodSeconds: 10
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: clickhouse
+  namespace: sunbird-rc-namespace
+spec:
+  selector:
+    app: clickhouse
+  ports:
+    - name: native
+      port: 9000
+      targetPort: 9000
+    - name: http
+      port: 8123
+      targetPort: 8123
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: metrics
+  namespace: sunbird-rc-namespace
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: metrics
+  template:
+    metadata:
+      labels:
+        app: metrics
+    spec:
+      containers:
+        - name: metrics
+          image: ghcr.io/sunbird-rc/sunbird-rc-metrics
+          ports:
+            - containerPort: 8070
+          env:
+            - name: CLICK_HOUSE_URL
+              value: "clickhouse:9000"
+            - name: CLICKHOUSE_DATABASE
+              value: "default"
+            - name: KAFKA_BOOTSTRAP_SERVERS
+              value: "kafka:9092"
+            - name: KAFKA_METRICS_TOPIC
+              value: "events"
+            - name: REDIS_URL
+              value: "redis:6379"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: metrics
+  namespace: sunbird-rc-namespace
+spec:
+  selector:
+    app: metrics
+  ports:
+    - port: 8070
+      targetPort: 8070

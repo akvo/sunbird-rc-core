@@ -1,0 +1,223 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: registry
+  namespace: sunbird-rc-namespace
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: registry
+  template:
+    metadata:
+      labels:
+        app: registry
+    spec:
+      containers:
+        - name: registry
+          image: eu.gcr.io/akvo-lumen/sunbird-rc/registry:latest-test
+          ports:
+            - containerPort: 8081
+          env:
+            - name: connectionInfo_uri
+              value: "jdbc:postgresql://db:5432/registry"
+            - name: connectionInfo_username
+              value: "postgres"
+            - name: connectionInfo_password
+              value: "postgres"
+            - name: authentication_enabled
+              value: "true"
+            - name: encryption_enabled
+              value: "false"
+            - name: encryption_health_check_url
+              value: "http://encryption-service:8013/health"
+            - name: encryption_uri
+              value: "http://encryption-service:8013/crypto/v1/_encrypt"
+            - name: decryption_uri
+              value: "http://encryption-service:8013/crypto/v1/_decrypt"
+            - name: encryption_batch_uri
+              value: "http://encryption-service:8013/crypto/v1/_encrypt"
+            - name: decryption_batch_uri
+              value: "http://encryption-service:8013/crypto/v1/_decrypt"
+            - name: signature_enabled
+              value: "true"
+            - name: signature_provider
+              value: "dev.sunbirdrc.registry.service.impl.SignatureV2ServiceImpl"
+            - name: did_enabled
+              value: "true"
+            - name: did_health_check_url
+              value: "http://identity:3332/health"
+            - name: did_generate_url
+              value: "http://identity:3332/did/generate"
+            - name: did_resolve_url
+              value: "http://identity:3332/did/resolve/{id}"
+            - name: signature_v2_health_check_url
+              value: "http://credential:3000/health"
+            - name: signature_v2_issue_url
+              value: "http://credential:3000/credentials/issue"
+            - name: signature_v2_get_url
+              value: "http://credential:3000/credentials/{id}"
+            - name: signature_v2_delete_url
+              value: "http://credential:3000/credentials/{id}"
+            - name: signature_v2_verify_url
+              value: "http://credential:3000/credentials/{id}/verify"
+            - name: signature_v2_verify_any_url
+              value: "http://credential:3000/credentials/verify"
+            - name: signature_v2_revocation_list_url
+              value: "http://credential:3000/credentials/revocation-list?issuerId={issuerDid}&page={page}&limit={limit}"
+            - name: signature_v2_credential_did_method
+              value: "rcw"
+            - name: signature_v2_issuer_did_method
+              value: "issuer"
+            - name: signature_v2_schema_author
+              value: "Registry"
+            - name: signature_v2_schema_author_did_method
+              value: "author"
+            - name: signature_v2_schema_health_check_url
+              value: "http://credential-schema:3333/health"
+            - name: signature_v2_schema_create_url
+              value: "http://credential-schema:3333/credential-schema"
+            - name: signature_v2_schema_update_url
+              value: "http://credential-schema:3333/credential-schema/{id}/{version}"
+            - name: signature_v2_schema_get_by_id_and_version_url
+              value: "http://credential-schema:3333/credential-schema/{id}/{version}"
+            - name: signature_v2_schema_search_by_tags_url
+              value: "http://credential-schema:3333/credential-schema?tags={tags}"
+            - name: claims_enabled
+              value: "false"
+            - name: claims_url
+              value: "http://claim-ms:8082"
+            - name: certificate_enabled
+              value: "false"
+            - name: sign_url
+              value: "http://certificate-signer:8079/sign"
+            - name: verify_url
+              value: "http://certificate-signer:8079/verify"
+            - name: sign_health_check_url
+              value: "http://certificate-signer:8079/health"
+            - name: certificate_health_check_url
+              value: "http://certificate-api:8078/health"
+            - name: pdf_url
+              value: "http://certificate-api:8078/api/v1/certificatePDF"
+            - name: template_base_url
+              value: "http://registry:8081/api/v1/templates/"
+            - name: filestorage_enabled
+              value: "true"
+            - name: filestorage_connection_url
+              value: "http://file-storage:9000"
+            - name: filestorage_access_key
+              valueFrom:
+                secretKeyRef:
+                  name: sunbird-rc
+                  key: minio-access-key
+            - name: filestorage_secret_key
+              valueFrom:
+                secretKeyRef:
+                  name: sunbird-rc
+                  key: minio-secret-key
+            - name: filestorage_bucket_key
+              value: "sunbird-rc"
+            - name: idgen_enabled
+              value: "true"
+            - name: idgen_health_check_url
+              value: "http://id-gen-service:8088/egov-idgen/health"
+            - name: idgen_generate_url
+              value: "http://id-gen-service:8088/egov-idgen/id/_generate"
+            - name: idgen_id_format_url
+              value: "http://id-gen-service:8088/egov-idgen/id/_format/add"
+            - name: notification_enabled
+              value: "false"
+            - name: notification_async_enabled
+              value: "false"
+            - name: notification_url
+              value: "http://notification-ms:8765/notification-service/v1/notification"
+            - name: event_enabled
+              value: "true"
+            - name: event_topic
+              value: "events"
+            - name: event_providerName
+              value: "dev.sunbirdrc.registry.service.impl.KafkaEventService"
+            - name: async_enabled
+              value: "true"
+            - name: elastic_search_connection_url
+              value: "es:9200"
+            - name: elastic_search_scheme
+              value: "http"
+            - name: elastic_search_auth_enabled
+              value: "false"
+            - name: search_providerName
+              value: "dev.sunbirdrc.registry.service.ElasticSearchService"
+            - name: sunbird_sso_realm
+              value: "sunbird-rc"
+            - name: sunbird_sso_url
+              value: "http://keycloak:8080/auth"
+            - name: OAUTH2_RESOURCES_0_URI
+              value: "http://keycloak:8080/auth/realms/sunbird-rc"
+            - name: OAUTH2_RESOURCES_0_PROPERTIES_ROLES_PATH
+              value: "realm_access.roles"
+            - name: identity_provider
+              value: "dev.sunbirdrc.auth.keycloak.KeycloakProviderImpl"
+            - name: sunbird_sso_admin_client_id
+              value: "admin-api"
+            - name: sunbird_sso_admin_client_secret
+              valueFrom:
+                secretKeyRef:
+                  name: sunbird-rc
+                  key: keycloak-admin-client-secret
+            - name: sunbird_sso_client_id
+              value: "registry-frontend"
+            - name: sunbird_keycloak_user_set_password
+              value: "true"
+            - name: sunbird_keycloak_user_password
+              value: "abcd@123"
+            - name: registry_base_apis_enable
+              value: "false"
+            - name: kafka_bootstrap_address
+              value: "kafka:9092"
+            - name: redis_host
+              value: "redis"
+            - name: redis_port
+              value: "6379"
+            - name: manager_type
+              value: "DefinitionsManager"
+            - name: logging.level.root
+              value: "INFO"
+            - name: server.forward-headers-strategy
+              value: "framework"
+            - name: server.use-forward-headers
+              value: "true"
+            - name: enable_external_templates
+              value: "true"
+            - name: webhook_enabled
+              value: "false"
+            - name: expand_reference
+              value: "false"
+            - name: swagger_title
+              value: "Sunbird Registry and Credential"
+            - name: hard_delete_enabled
+              value: "true"
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8081
+            initialDelaySeconds: 60
+            periodSeconds: 10
+          resources:
+            requests:
+              memory: "512Mi"
+              cpu: "250m"
+            limits:
+              memory: "2Gi"
+              cpu: "1000m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: registry
+  namespace: sunbird-rc-namespace
+spec:
+  selector:
+    app: registry
+  ports:
+    - port: 8081
+      targetPort: 8081

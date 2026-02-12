@@ -1,0 +1,42 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: digilocker-certificate-api
+  namespace: sunbird-rc-namespace
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: digilocker-certificate-api
+  template:
+    metadata:
+      labels:
+        app: digilocker-certificate-api
+    spec:
+      containers:
+        - name: digilocker-certificate-api
+          image: ghcr.io/sunbird-rc/sunbird-rc-digilocker-certificate-api
+          ports:
+            - containerPort: 8087
+          env:
+            - name: KEYCLOAK_CLIENT_ID
+              value: "admin-api"
+            - name: KEYCLOAK_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: sunbird-rc
+                  key: keycloak-admin-client-secret
+            - name: PORT
+              value: "8087"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: digilocker-certificate-api
+  namespace: sunbird-rc-namespace
+spec:
+  selector:
+    app: digilocker-certificate-api
+  ports:
+    - port: 8087
+      targetPort: 8087

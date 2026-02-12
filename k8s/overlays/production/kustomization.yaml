@@ -1,0 +1,46 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+# Production overlay
+# - Uses Vault in production mode with persistent storage
+# - Requires manual initialization and unsealing
+
+namespace: sunbird-rc
+
+resources:
+  - ../../base/namespace.yaml
+  - ../../base/configmap.yaml
+  - ../../base/postgres.yaml
+  - ../../base/redis.yaml
+  - ../../base/kafka.yaml
+  - ../../base/vault-production.yaml  # Production Vault
+  - ../../base/keycloak.yaml
+  - ../../base/elasticsearch.yaml
+  - ../../base/did-services.yaml
+  - ../../base/registry.yaml
+  - ../../base/supporting-services.yaml
+  - ../../base/nginx.yaml
+  # Additional services
+  - ../../base/claim-ms.yaml
+  - ../../base/encryption-service.yaml
+  - ../../base/id-gen-service.yaml
+  - ../../base/notification-ms.yaml
+  - ../../base/metrics.yaml
+  - ../../base/admin-portal.yaml
+  - ../../base/bulk-issuance.yaml
+  - ../../base/digilocker.yaml
+
+patches:
+  # Update identity service to use vault token from secret
+  - target:
+      kind: Deployment
+      name: identity
+    patch: |
+      - op: replace
+        path: /spec/template/spec/containers/0/env/5
+        value:
+          name: VAULT_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: vault-token
+              key: token

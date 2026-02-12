@@ -1,0 +1,37 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: bulk-issuance
+  namespace: sunbird-rc-namespace
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: bulk-issuance
+  template:
+    metadata:
+      labels:
+        app: bulk-issuance
+    spec:
+      containers:
+        - name: bulk-issuance
+          image: ghcr.io/sunbird-rc/sunbird-rc-bulk-issuance
+          ports:
+            - containerPort: 5665
+          env:
+            - name: REGISTRY_BASE_URL
+              value: "http://registry:8081/"
+            - name: DATABASE_HOST
+              value: "db"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: bulk-issuance
+  namespace: sunbird-rc-namespace
+spec:
+  selector:
+    app: bulk-issuance
+  ports:
+    - port: 5665
+      targetPort: 5665

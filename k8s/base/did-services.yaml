@@ -1,0 +1,160 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: identity
+  namespace: sunbird-rc-namespace
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: identity
+  template:
+    metadata:
+      labels:
+        app: identity
+    spec:
+      containers:
+        - name: identity
+          image: ghcr.io/sunbird-rc/sunbird-rc-identity-service:v2.0.2
+          ports:
+            - containerPort: 3332
+          env:
+            - name: DATABASE_URL
+              value: "postgres://postgres:postgres@db:5432/registry"
+            - name: VAULT_ADDR
+              value: "http://vault:8200"
+            - name: VAULT_ADDRESS
+              value: "http://vault:8200"
+            - name: VAULT_BASE_URL
+              value: "http://vault:8200/v1"
+            - name: VAULT_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: vault-token
+                  key: token
+            - name: VAULT_ROOT_PATH
+              value: "http://vault:8200/v1/secret"
+            - name: VAULT_TIMEOUT
+              value: "5000"
+            - name: VAULT_PROXY
+              value: "false"
+            - name: SIGNING_ALGORITHM
+              value: "Ed25519Signature2020"
+            - name: WEB_DID_BASE_URL
+              value: "https://example.com/identifier"
+            - name: ENABLE_AUTH
+              value: "false"
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 3332
+            initialDelaySeconds: 30
+            periodSeconds: 10
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: identity
+  namespace: sunbird-rc-namespace
+spec:
+  selector:
+    app: identity
+  ports:
+    - port: 3332
+      targetPort: 3332
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: credential-schema
+  namespace: sunbird-rc-namespace
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: credential-schema
+  template:
+    metadata:
+      labels:
+        app: credential-schema
+    spec:
+      containers:
+        - name: credential-schema
+          image: ghcr.io/sunbird-rc/sunbird-rc-credential-schema:v2.0.2
+          ports:
+            - containerPort: 3333
+          env:
+            - name: DATABASE_URL
+              value: "postgres://postgres:postgres@db:5432/registry"
+            - name: IDENTITY_BASE_URL
+              value: "http://identity:3332"
+            - name: ENABLE_AUTH
+              value: "false"
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 3333
+            initialDelaySeconds: 30
+            periodSeconds: 10
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: credential-schema
+  namespace: sunbird-rc-namespace
+spec:
+  selector:
+    app: credential-schema
+  ports:
+    - port: 3333
+      targetPort: 3333
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: credential
+  namespace: sunbird-rc-namespace
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: credential
+  template:
+    metadata:
+      labels:
+        app: credential
+    spec:
+      containers:
+        - name: credential
+          image: ghcr.io/sunbird-rc/sunbird-rc-credentials-service:v2.0.0
+          ports:
+            - containerPort: 3000
+          env:
+            - name: DATABASE_URL
+              value: "postgres://postgres:postgres@db:5432/registry"
+            - name: IDENTITY_BASE_URL
+              value: "http://identity:3332"
+            - name: SCHEMA_BASE_URL
+              value: "http://credential-schema:3333"
+            - name: CREDENTIAL_SERVICE_BASE_URL
+              value: "http://credential:3000"
+            - name: ENABLE_AUTH
+              value: "false"
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 3000
+            initialDelaySeconds: 30
+            periodSeconds: 10
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: credential
+  namespace: sunbird-rc-namespace
+spec:
+  selector:
+    app: credential
+  ports:
+    - port: 3000
+      targetPort: 3000
