@@ -473,6 +473,28 @@
       },
       "notBefore": 0,
       "groups": []
+    },
+    {
+      "id": "demo-api-service-account",
+      "createdTimestamp": 1634296700340,
+      "username": "service-account-demo-api",
+      "enabled": true,
+      "totp": false,
+      "emailVerified": false,
+      "serviceAccountClientId": "demo-api",
+      "disableableCredentialTypes": [],
+      "requiredActions": [],
+      "realmRoles": [
+        "default-roles-sunbird-rc",
+        "admin"
+      ],
+      "clientRoles": {
+        "realm-management": [
+          "manage-users"
+        ]
+      },
+      "notBefore": 0,
+      "groups": []
     }
   ],
   "scopeMappings": [
@@ -947,6 +969,42 @@
       "implicitFlowEnabled": false,
       "fullScopeAllowed": true,
       "attributes": {}
+    },
+    {
+      "clientId": "demo-api",
+      "name": "Demo API Client",
+      "description": "API client for mobile and frontend applications",
+      "enabled": true,
+      "publicClient": false,
+      "secret": "demo-api-secret-change-me",
+      "redirectUris": [
+        "*"
+      ],
+      "webOrigins": [
+        "*"
+      ],
+      "protocol": "openid-connect",
+      "directAccessGrantsEnabled": true,
+      "standardFlowEnabled": true,
+      "implicitFlowEnabled": false,
+      "serviceAccountsEnabled": true,
+      "fullScopeAllowed": true,
+      "attributes": {
+        "use.refresh.tokens": "true",
+        "client_credentials.use_refresh_token": "false"
+      },
+      "defaultClientScopes": [
+        "web-origins",
+        "roles",
+        "profile",
+        "email"
+      ],
+      "optionalClientScopes": [
+        "address",
+        "phone",
+        "offline_access",
+        "microprofile-jwt"
+      ]
     }
   ],
   "clientScopes": [

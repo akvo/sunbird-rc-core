@@ -107,4 +107,7 @@ java/docker-build/
 
 # Demo/temp files
 water_facilities.csv
+water_facilities_export.csv
 *.org
+*.png
+!frontend/**/*.png

@@ -8,7 +8,7 @@
 
 ```bash
 # Clone this repository
-gh repo clone dedenbangkit/sunbird-rc-core
+gh repo clone akvo/sunbird-rc-core
 cd sunbird-rc-core
 
 # Start all services with automated vault unsealing
@@ -134,7 +134,7 @@ Contributions welcome!
 
 ## 🔗 Links
 
-- **This Fork**: https://github.com/dedenbangkit/sunbird-rc-core
+- **This Fork**: https://github.com/akvo/sunbird-rc-core
 - **Original**: https://github.com/Sunbird-RC/sunbird-rc-core
 - **Discussions**: https://github.com/Sunbird-RC/community/discussions
 
