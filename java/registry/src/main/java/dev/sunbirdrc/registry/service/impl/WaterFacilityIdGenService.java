@@ -28,14 +28,14 @@ import java.util.Map;
  * Custom IIdGenService implementation for WaterFacility entities.
  *
  * Generates deterministic wfId values based on entity attributes:
- * - wfName
- * - typeOfWaterFacility
- * - location.province
+ * - geoCode
+ * - waterPointType
+ * - location.county
  * - location.district
- * - location.village
+ * - location.community
  *
- * Format: WF-<PROVINCE_ABBR>-<DISTRICT_ABBR>-<TYPE_CODE>-<HASH>
- * Example: WF-DIY-SLM-PS-7A91C2
+ * Format: WF-<COUNTY_ABBR>-<DISTRICT_ABBR>-<TYPE_CODE>-<HASH>
+ * Example: WF-NIM-BUU-TWB-7A91C2
  *
  * The @Primary annotation ensures this service is used instead of
  * the default IdGenService when both are available.
@@ -55,14 +55,20 @@ public class WaterFacilityIdGenService implements IIdGenService {
     @Autowired
     private ObjectMapper objectMapper;
 
-    // Mapping of facility types to short codes
-    private static final Map<String, String> FACILITY_TYPE_CODES = new HashMap<>();
+    // Mapping of water point types to short codes
+    private static final Map<String, String> WATER_POINT_TYPE_CODES = new HashMap<>();
     static {
-        FACILITY_TYPE_CODES.put("Water Treatment Plant", "WTP");
-        FACILITY_TYPE_CODES.put("Reservoir", "RES");
-        FACILITY_TYPE_CODES.put("Pumping Station", "PS");
-        FACILITY_TYPE_CODES.put("Distribution Center", "DC");
-        FACILITY_TYPE_CODES.put("Desalination Plant", "DES");
+        WATER_POINT_TYPE_CODES.put("Protected dug well", "PDW");
+        WATER_POINT_TYPE_CODES.put("Unprotected dug well", "UDW");
+        WATER_POINT_TYPE_CODES.put("Tube well or borehole", "TWB");
+        WATER_POINT_TYPE_CODES.put("Protected spring", "PS");
+        WATER_POINT_TYPE_CODES.put("Unprotected spring", "US");
+        WATER_POINT_TYPE_CODES.put("Piped water into dwelling/plot/yard", "PWD");
+        WATER_POINT_TYPE_CODES.put("Public tap/standpipe", "PTS");
+        WATER_POINT_TYPE_CODES.put("Unequipped borehole", "UEB");
+        WATER_POINT_TYPE_CODES.put("Rainwater (harvesting)", "RWH");
+        WATER_POINT_TYPE_CODES.put("Sand/Sub-surface dam (with well or standpipe)", "SSD");
+        WATER_POINT_TYPE_CODES.put("Other", "OTH");
     }
 
     @Override
@@ -87,20 +93,20 @@ public class WaterFacilityIdGenService implements IIdGenService {
         logger.info("Generating wfId for WaterFacility entity");
 
         // Extract required fields from entity data
-        String wfName = getFieldValue(entityData, "wfName");
-        String facilityType = getFieldValue(entityData, "typeOfWaterFacility");
-        String province = getNestedFieldValue(entityData, "location", "province");
+        String geoCode = getFieldValue(entityData, "geoCode");
+        String waterPointType = getFieldValue(entityData, "waterPointType");
+        String county = getNestedFieldValue(entityData, "location", "county");
         String district = getNestedFieldValue(entityData, "location", "district");
-        String village = getNestedFieldValue(entityData, "location", "village");
+        String community = getNestedFieldValue(entityData, "location", "community");
 
         // Generate the wfId
-        String wfId = generateWaterFacilityId(wfName, facilityType, province, district, village);
+        String wfId = generateWaterFacilityId(geoCode, waterPointType, county, district, community);
 
         // Check if a WaterFacility with this wfId already exists
         if (checkDuplicateExists(wfId)) {
             logger.error("Duplicate WaterFacility detected. wfId {} already exists.", wfId);
-            throw new GenerateException("Duplicate WaterFacility: A facility with wfId '" + wfId +
-                "' already exists. Facilities with the same name, type, and location are not allowed.");
+            throw new GenerateException("Duplicate WaterFacility: A water point with wfId '" + wfId +
+                "' already exists. Water points with the same geoCode, type, and location are not allowed.");
         }
 
         // Find the wfId field in uniqueIdentifierFields and map the generated ID
@@ -188,21 +194,21 @@ public class WaterFacilityIdGenService implements IIdGenService {
 
     /**
      * Generate a WaterFacility ID in the format:
-     * WF-<PROVINCE_ABBR>-<DISTRICT_ABBR>-<TYPE_CODE>-<HASH>
+     * WF-<COUNTY_ABBR>-<DISTRICT_ABBR>-<TYPE_CODE>-<HASH>
      */
-    private String generateWaterFacilityId(String wfName, String facilityType, String province, String district, String village) throws GenerateException {
+    private String generateWaterFacilityId(String geoCode, String waterPointType, String county, String district, String community) throws GenerateException {
         // Get abbreviations (uppercase, first 3 chars, alphanumeric only)
-        String provinceAbbr = abbreviate(province);
+        String countyAbbr = abbreviate(county);
         String districtAbbr = abbreviate(district);
 
-        // Get facility type code
-        String typeCode = FACILITY_TYPE_CODES.getOrDefault(facilityType, "UNK");
+        // Get water point type code
+        String typeCode = WATER_POINT_TYPE_CODES.getOrDefault(waterPointType, "UNK");
 
         // Generate hash from concatenated values
-        String hash = generateHash(wfName, facilityType, province, district, village);
+        String hash = generateHash(geoCode, waterPointType, county, district, community);
 
         // Construct the ID
-        return String.format("WF-%s-%s-%s-%s", provinceAbbr, districtAbbr, typeCode, hash);
+        return String.format("WF-%s-%s-%s-%s", countyAbbr, districtAbbr, typeCode, hash);
     }
 
     /**
@@ -233,14 +239,14 @@ public class WaterFacilityIdGenService implements IIdGenService {
      * 3. SHA-256 hash
      * 4. Take first 6 hex characters (uppercase)
      */
-    private String generateHash(String wfName, String facilityType, String province, String district, String village) throws GenerateException {
+    private String generateHash(String geoCode, String waterPointType, String county, String district, String community) throws GenerateException {
         // Normalize and concatenate values
         String normalized = String.join("|",
-                normalize(wfName),
-                normalize(facilityType),
-                normalize(province),
+                normalize(geoCode),
+                normalize(waterPointType),
+                normalize(county),
                 normalize(district),
-                normalize(village)
+                normalize(community)
         );
 
         try {
@@ -288,7 +294,7 @@ public class WaterFacilityIdGenService implements IIdGenService {
     }
 
     /**
-     * Get a nested field value from the entity JSON (e.g., location.province).
+     * Get a nested field value from the entity JSON (e.g., location.county).
      */
     private String getNestedFieldValue(JsonNode entityData, String parentField, String childField) {
         JsonNode parent = entityData.get(parentField);
