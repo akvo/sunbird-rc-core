@@ -405,6 +405,9 @@ services:
         condition: service_started
       file-storage:
         condition: service_started
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./frontend:/usr/share/nginx/frontend:ro
     healthcheck:
       test: ['CMD', 'curl', '-f', 'localhost:80']
       interval: 30s
