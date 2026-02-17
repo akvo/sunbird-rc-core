@@ -1,0 +1,187 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: nginx-config
+  namespace: sunbird-rc-namespace
+data:
+  default.conf: |
+    server {
+        listen 80;
+
+        # Disable caching for API responses
+        add_header Cache-Control "no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0" always;
+        add_header Pragma "no-cache" always;
+
+        # Frontend static files
+        location / {
+            root   /usr/share/nginx/html;
+            index  index.html index.htm;
+            try_files $uri $uri/ /index.html;
+        }
+
+        # Registry API
+        location /registry/ {
+            proxy_pass http://registry:8081/;
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Proto $scheme;
+            proxy_hide_header Cache-Control;
+            add_header Cache-Control "no-store, no-cache, must-revalidate" always;
+        }
+
+        # Registry API direct (for Swagger UI)
+        location /api/ {
+            proxy_pass http://registry:8081/api/;
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Proto $scheme;
+            proxy_hide_header Cache-Control;
+            add_header Cache-Control "no-store, no-cache, must-revalidate" always;
+        }
+
+        # Health endpoint
+        location /health {
+            proxy_pass http://registry:8081/health;
+            add_header Cache-Control "no-store" always;
+        }
+
+        # Swagger resources
+        location /swagger-ui/ {
+            proxy_pass http://registry:8081/swagger-ui/;
+            add_header Cache-Control "no-store" always;
+        }
+        location /swagger-resources {
+            proxy_pass http://registry:8081/swagger-resources;
+            add_header Cache-Control "no-store" always;
+        }
+        location /v2/api-docs {
+            proxy_pass http://registry:8081/v2/api-docs;
+            add_header Cache-Control "no-store" always;
+        }
+        location /v3/api-docs {
+            proxy_pass http://registry:8081/v3/api-docs;
+            add_header Cache-Control "no-store" always;
+        }
+
+        # MinIO file storage
+        location /bucket/ {
+            proxy_pass http://file-storage:9000/;
+        }
+
+        # Context proxy service
+        location /proxy/ {
+            proxy_pass http://context-proxy-service:4400/proxy/;
+        }
+
+        # Public key service
+        location /public-key-service/ {
+            proxy_pass http://public-key-service:3300/public-key-service/;
+        }
+
+        # Keycloak authentication
+        location /auth/ {
+            proxy_pass http://keycloak:8080/auth/;
+        }
+
+        # Identity service
+        location /identity/ {
+            proxy_pass http://identity:3332/;
+        }
+
+        # Credential schema service
+        location /credential-schema/ {
+            proxy_pass http://credential-schema:3333/;
+        }
+
+        # Credential service
+        location /credential/ {
+            proxy_pass http://credential:3000/;
+        }
+
+        # Claim service
+        location /claim-ms/ {
+            proxy_pass http://claim-ms:8082/;
+        }
+
+        # Notification service
+        location /notification/ {
+            proxy_pass http://notification-ms:8765/notification-service/;
+        }
+
+        # Metrics service
+        location /metrics/ {
+            proxy_pass http://metrics:8070/;
+        }
+
+        # Admin portal (no trailing slash - preserve /admin/ prefix)
+        location /admin/ {
+            proxy_pass http://admin-portal:3001;
+        }
+
+        error_page 500 502 503 504 /50x.html;
+        location = /50x.html {
+            root /usr/share/nginx/html;
+        }
+    }
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nginx
+  namespace: sunbird-rc-namespace
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: nginx
+  template:
+    metadata:
+      labels:
+        app: nginx
+    spec:
+      containers:
+        - name: nginx
+          image: ghcr.io/sunbird-rc/sunbird-rc-nginx
+          ports:
+            - containerPort: 80
+          volumeMounts:
+            - name: nginx-config
+              mountPath: /etc/nginx/conf.d/default.conf
+              subPath: default.conf
+      volumes:
+        - name: nginx-config
+          configMap:
+            name: nginx-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: nginx
+  namespace: sunbird-rc-namespace
+spec:
+  selector:
+    app: nginx
+  ports:
+    - port: 80
+      targetPort: 80
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: sunbird-rc-ingress
+  namespace: sunbird-rc-namespace
+  annotations:
+    kubernetes.io/ingress.class: traefik
+spec:
+  rules:
+    - http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: nginx
+                port:
+                  number: 80

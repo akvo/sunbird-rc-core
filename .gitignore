@@ -97,7 +97,7 @@ keys.txt
 .env
 k8s/vault-keys.json
 k8s/credentials.json
-configure-vault-keys.json
+k8s/configure-vault-keys.json
 
 # Claude Code
 .claude/

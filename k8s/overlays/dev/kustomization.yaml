@@ -1,0 +1,10 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+# Development overlay - uses Vault in dev mode
+# Quick setup, no persistence, not for production
+
+namespace: sunbird-rc
+
+resources:
+  - ../../base

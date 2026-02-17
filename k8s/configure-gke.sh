@@ -1,22 +1,27 @@
 #!/bin/bash
 #
-# configure.sh - Post-deployment configuration for Sunbird RC on Akvo GCP test cluster
+# configure-gke.sh - Post-deployment configuration for Sunbird RC on Akvo GCP test cluster
 #
-# This script handles tasks that can't be done declaratively via k8s manifests:
+# Unlike install.sh (which deploys manifests + configures on local k3s), this script
+# only handles post-deployment configuration for an existing GKE cluster where
+# k8s manifests are applied separately (via akvo-config CI/CD).
+#
+# Tasks:
 # 1. Create keycloak-realm-config ConfigMap (realm-export.json is 71KB)
 # 2. Initialize and unseal the Sunbird RC application Vault
 # 3. Enable KV secrets engine and create vault-token secret
 # 4. Update Keycloak admin-api client secret to match Vault secret
 # 5. Setup MinIO bucket
-# 6. (Optional) Build and push custom registry image with schemas
+# 6. Setup Kafka topics
+# 7. (Optional) Build and push custom registry image with schemas
 #
 # Usage:
-#   ./configure.sh                  # Full configuration
-#   ./configure.sh --vault-init     # Only init/unseal Vault
-#   ./configure.sh --keycloak       # Only setup Keycloak
-#   ./configure.sh --minio          # Only setup MinIO bucket
-#   ./configure.sh --build-image    # Only build and push registry image
-#   ./configure.sh --status         # Check status of all services
+#   ./configure-gke.sh                  # Full configuration
+#   ./configure-gke.sh --vault-init     # Only init/unseal Vault
+#   ./configure-gke.sh --keycloak       # Only setup Keycloak
+#   ./configure-gke.sh --minio          # Only setup MinIO bucket
+#   ./configure-gke.sh --build-image    # Only build and push registry image
+#   ./configure-gke.sh --status         # Check status of all services
 #
 
 set -e
@@ -24,6 +29,7 @@ set -e
 # Configuration
 NAMESPACE="sunbird-rc-namespace"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_ROOT="${SCRIPT_DIR}/.."
 KEYS_FILE="${SCRIPT_DIR}/configure-vault-keys.json"
 
 # Colors for output
@@ -79,7 +85,7 @@ check_prerequisites() {
 create_keycloak_realm_configmap() {
     log_info "Creating Keycloak realm ConfigMap..."
 
-    REALM_FILE="${SCRIPT_DIR}/imports/realm-export.json"
+    REALM_FILE="${REPO_ROOT}/imports/realm-export.json"
     if [ ! -f "$REALM_FILE" ]; then
         log_error "realm-export.json not found at $REALM_FILE"
         return 1
@@ -377,7 +383,7 @@ setup_kafka() {
 build_registry_image() {
     log_info "Building custom registry image with schemas..."
 
-    DOCKERFILE="${SCRIPT_DIR}/Dockerfile.registry"
+    DOCKERFILE="${REPO_ROOT}/Dockerfile.registry"
     REGISTRY_HOST="${REGISTRY_HOST:-eu.gcr.io/akvo-lumen}"
     REGISTRY_IMAGE="${REGISTRY_HOST}/sunbird-rc/registry"
     IMAGE_TAG="latest-test"
@@ -389,7 +395,7 @@ build_registry_image() {
     fi
 
     log_info "Building image: ${REGISTRY_IMAGE_FULL}"
-    docker build -t "${REGISTRY_IMAGE_FULL}" -f "$DOCKERFILE" "$SCRIPT_DIR" || {
+    docker build -t "${REGISTRY_IMAGE_FULL}" -f "$DOCKERFILE" "$REPO_ROOT" || {
         log_error "Docker build failed"
         return 1
     }
@@ -471,7 +477,7 @@ configure() {
     log_warn "Remember to:"
     echo "  1. Backup $KEYS_FILE securely"
     echo "  2. Store unseal keys in a secure location"
-    echo "  3. Optionally run: ./configure.sh --build-image  (to bake schemas into registry image)"
+    echo "  3. Optionally run: ./configure-gke.sh --build-image  (to bake schemas into registry image)"
     echo ""
 }
 

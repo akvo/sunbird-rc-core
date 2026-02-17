@@ -1,0 +1,144 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: public-key-service
+  namespace: sunbird-rc-namespace
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: public-key-service
+  template:
+    metadata:
+      labels:
+        app: public-key-service
+    spec:
+      containers:
+        - name: public-key-service
+          image: ghcr.io/sunbird-rc/sunbird-rc-public-key-service:latest
+          ports:
+            - containerPort: 3300
+          env:
+            - name: CONFIG_BASE_PATH
+              value: "/etc/keys"
+          volumeMounts:
+            - name: public-key-config
+              mountPath: /etc/keys
+      volumes:
+        - name: public-key-config
+          configMap:
+            name: public-key-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: public-key-service
+  namespace: sunbird-rc-namespace
+spec:
+  selector:
+    app: public-key-service
+  ports:
+    - port: 3300
+      targetPort: 3300
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: context-proxy-service
+  namespace: sunbird-rc-namespace
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: context-proxy-service
+  template:
+    metadata:
+      labels:
+        app: context-proxy-service
+    spec:
+      containers:
+        - name: context-proxy-service
+          image: ghcr.io/sunbird-rc/sunbird-rc-context-proxy-service
+          ports:
+            - containerPort: 4400
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: context-proxy-service
+  namespace: sunbird-rc-namespace
+spec:
+  selector:
+    app: context-proxy-service
+  ports:
+    - port: 4400
+      targetPort: 4400
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: minio-pvc
+  namespace: sunbird-rc-namespace
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 5Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: file-storage
+  namespace: sunbird-rc-namespace
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: file-storage
+  template:
+    metadata:
+      labels:
+        app: file-storage
+    spec:
+      containers:
+        - name: minio
+          image: quay.io/minio/minio:RELEASE.2025-01-20T14-49-07Z
+          args: ["server", "--address", "0.0.0.0:9000", "--console-address", "0.0.0.0:9001", "/data"]
+          ports:
+            - containerPort: 9000
+            - containerPort: 9001
+          env:
+            - name: MINIO_ROOT_USER
+              valueFrom:
+                secretKeyRef:
+                  name: sunbird-rc
+                  key: minio-access-key
+            - name: MINIO_ROOT_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: sunbird-rc
+                  key: minio-secret-key
+          volumeMounts:
+            - name: minio-data
+              mountPath: /data
+      volumes:
+        - name: minio-data
+          persistentVolumeClaim:
+            claimName: minio-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: file-storage
+  namespace: sunbird-rc-namespace
+spec:
+  selector:
+    app: file-storage
+  ports:
+    - name: api
+      port: 9000
+      targetPort: 9000
+    - name: console
+      port: 9001
+      targetPort: 9001

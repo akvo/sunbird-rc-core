@@ -1,0 +1,53 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: encryption-service
+  namespace: sunbird-rc-namespace
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: encryption-service
+  template:
+    metadata:
+      labels:
+        app: encryption-service
+    spec:
+      containers:
+        - name: encryption-service
+          image: ghcr.io/sunbird-rc/encryption-service:v2.0.2
+          ports:
+            - containerPort: 8013
+          env:
+            - name: server.port
+              value: "8013"
+            - name: server.servlet.context-path
+              value: "/"
+            - name: spring.datasource.url
+              value: "jdbc:postgresql://db:5432/registry"
+            - name: spring.flyway.url
+              value: "jdbc:postgresql://db:5432/registry"
+            - name: spring.flyway.baseline-on-migrate
+              value: "true"
+            - name: egov.mdms.provider
+              value: "org.egov.enc.masterdata.provider.DBMasterDataProvider"
+            - name: management.endpoints.web.base-path
+              value: "/"
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8013
+            initialDelaySeconds: 30
+            periodSeconds: 10
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: encryption-service
+  namespace: sunbird-rc-namespace
+spec:
+  selector:
+    app: encryption-service
+  ports:
+    - port: 8013
+      targetPort: 8013

@@ -1,0 +1,81 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: keycloak
+  namespace: sunbird-rc-namespace
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: keycloak
+  template:
+    metadata:
+      labels:
+        app: keycloak
+    spec:
+      containers:
+        - name: keycloak
+          image: ghcr.io/sunbird-rc/sunbird-rc-keycloak:latest
+          ports:
+            - containerPort: 8080
+            - containerPort: 9990
+          env:
+            - name: DB_VENDOR
+              value: "postgres"
+            - name: DB_ADDR
+              value: "db"
+            - name: DB_PORT
+              value: "5432"
+            - name: DB_DATABASE
+              value: "registry"
+            - name: DB_USER
+              value: "postgres"
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: sunbird-rc
+                  key: db-password
+            - name: KEYCLOAK_USER
+              value: "admin"
+            - name: KEYCLOAK_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: sunbird-rc
+                  key: keycloak-admin-password
+            - name: KEYCLOAK_IMPORT
+              value: "/opt/jboss/keycloak/imports/realm-export.json"
+            - name: KEYCLOAK_LOGO
+              value: "https://svgshare.com/i/hCs.svg"
+            - name: KEYCLOAK_FRONTEND_URL
+              value: "http://keycloak:8080/auth"
+            - name: PROXY_ADDRESS_FORWARDING
+              value: "true"
+          volumeMounts:
+            - name: keycloak-realm
+              mountPath: /opt/jboss/keycloak/imports
+          readinessProbe:
+            httpGet:
+              path: /auth/
+              port: 8080
+            initialDelaySeconds: 60
+            periodSeconds: 10
+      volumes:
+        - name: keycloak-realm
+          configMap:
+            name: keycloak-realm-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: keycloak
+  namespace: sunbird-rc-namespace
+spec:
+  selector:
+    app: keycloak
+  ports:
+    - name: http
+      port: 8080
+      targetPort: 8080
+    - name: management
+      port: 9990
+      targetPort: 9990
