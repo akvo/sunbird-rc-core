@@ -41,7 +41,7 @@ target
 # CDT-specific (C/C++ Development Tooling)
 .cproject
 
-# CDT- autotools 
+# CDT- autotools
 .autotools
 
 # Java annotation processor (APT)
@@ -107,4 +107,5 @@ java/docker-build/
 
 # Demo/temp files
 water_facilities.csv
+water_facilities_export.csv
 *.org

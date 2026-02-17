@@ -179,7 +179,7 @@
   },
   "_osConfig": {
     "privateFields": [],
-    "signedFields": [],
+    "signedFields": ["wfId", "geoCode", "waterPointType", "location"],
     "indexFields": [
       "wfId",
       "geoCode",
@@ -203,6 +203,54 @@
     ],
     "roles": ["admin"],
     "inviteRoles": ["anonymous"],
-    "ownershipAttributes": []
+    "ownershipAttributes": [],
+    "credentialTemplate": {
+      "@context": [
+        "https://www.w3.org/2018/credentials/v1",
+        {
+          "@context": {
+            "@version": 1.1,
+            "@protected": true,
+            "WaterFacility": {
+              "@id": "https://sunbird-rc.akvotest.org/vc/WaterFacility",
+              "@context": {
+                "id": "@id",
+                "@version": 1.1,
+                "@protected": true,
+                "wfId": "schema:Text",
+                "geoCode": "schema:Text",
+                "waterPointType": "schema:Text",
+                "extractionType": "schema:Text",
+                "pumpType": "schema:Text",
+                "owner": "schema:Text",
+                "funder": "schema:Text",
+                "installer": "schema:Text",
+                "county": "schema:Text",
+                "district": "schema:Text",
+                "community": "schema:Text"
+              }
+            }
+          }
+        }
+      ],
+      "type": ["VerifiableCredential"],
+      "issuanceDate": "2021-08-27T10:57:57.237Z",
+      "credentialSubject": {
+        "type": "WaterFacility",
+        "wfId": "{{wfId}}",
+        "geoCode": "{{geoCode}}",
+        "waterPointType": "{{waterPointType}}",
+        "extractionType": "{{extractionType}}",
+        "pumpType": "{{pumpType}}",
+        "owner": "{{owner}}",
+        "county": "{{location.county}}",
+        "district": "{{location.district}}",
+        "community": "{{location.community}}"
+      },
+      "issuer": "did:web:sunbird-rc.akvotest.org"
+    },
+    "certificateTemplates": {
+      "html": "http://nginx/templates/WaterFacility.html"
+    }
   }
 }

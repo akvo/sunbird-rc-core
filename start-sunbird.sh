@@ -3,6 +3,12 @@
 # Enable ID generation for WaterFacility wfId
 export IDGEN_ENABLED=true
 
+# Enable signature and certificate for QR code generation
+export SIGNATURE_ENABLED=true
+export CERTIFICATE_ENABLED=true
+# Use V1 signature provider (simpler, doesn't require DID/identity service)
+export SIGNATURE_PROVIDER=dev.sunbirdrc.registry.service.impl.SignatureV1ServiceImpl
+
 echo "Starting Sunbird RC..."
 docker compose up -d
 
@@ -28,10 +34,20 @@ for i in {1..30}; do
 done
 
 echo "Starting dependent services..."
-docker compose up -d identity credential-schema claim-ms nginx metrics admin-portal
+docker compose up -d claim-ms nginx metrics admin-portal
 
-echo "Waiting for services to be healthy..."
-sleep 20
+echo "Waiting for registry to be healthy..."
+for i in {1..60}; do
+  if curl -s http://localhost:8081/health | grep -q "healthy"; then
+    echo "✓ Registry is healthy!"
+    break
+  fi
+  echo -n "."
+  sleep 2
+done
+
+echo "Waiting for services to stabilize..."
+sleep 10
 
 echo ""
 echo "========================================"

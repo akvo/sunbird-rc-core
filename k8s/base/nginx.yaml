@@ -1,6 +1,116 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
+  name: certificate-templates
+  namespace: sunbird-rc-namespace
+data:
+  WaterFacility.html: |
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Water Facility Registration Certificate</title>
+        <style>
+            * { margin: 0; padding: 0; box-sizing: border-box; }
+            body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f5f5f5; padding: 20px; }
+            .certificate { max-width: 800px; margin: 0 auto; background: white; border: 3px solid #2c5282; border-radius: 10px; padding: 40px; position: relative; }
+            .certificate::before { content: ''; position: absolute; top: 10px; left: 10px; right: 10px; bottom: 10px; border: 1px solid #4299e1; border-radius: 5px; pointer-events: none; }
+            .header { text-align: center; margin-bottom: 30px; padding-bottom: 20px; border-bottom: 2px solid #4299e1; }
+            .header h1 { color: #2c5282; font-size: 28px; margin-bottom: 10px; }
+            .header h2 { color: #4a5568; font-size: 18px; font-weight: normal; }
+            .content { display: flex; justify-content: space-between; gap: 30px; }
+            .details { flex: 1; }
+            .qr-section { width: 200px; text-align: center; }
+            .qr-section img { width: 180px; height: 180px; border: 2px solid #e2e8f0; border-radius: 8px; padding: 10px; background: white; }
+            .qr-section p { margin-top: 10px; font-size: 12px; color: #718096; }
+            .field { margin-bottom: 15px; }
+            .field-label { font-size: 12px; color: #718096; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 3px; }
+            .field-value { font-size: 16px; color: #2d3748; font-weight: 500; padding: 8px 12px; background: #f7fafc; border-radius: 4px; border-left: 3px solid #4299e1; }
+            .location-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+            .wf-id { font-size: 24px !important; color: #2c5282 !important; font-weight: 700 !important; background: #ebf8ff !important; border-left-color: #2c5282 !important; }
+            .footer { margin-top: 30px; padding-top: 20px; border-top: 1px solid #e2e8f0; text-align: center; font-size: 12px; color: #a0aec0; }
+            .badge { display: inline-block; padding: 4px 12px; border-radius: 20px; font-size: 14px; font-weight: 500; }
+            .badge-type { background: #c6f6d5; color: #276749; }
+            .badge-extraction { background: #fed7d7; color: #c53030; }
+            .coordinates { font-family: monospace; font-size: 14px; }
+        </style>
+    </head>
+    <body>
+        <div class="certificate">
+            <div class="header">
+                <h1>Water Facility Registration Certificate</h1>
+                <h2>Sunbird RC Digital Registry</h2>
+            </div>
+            <div class="content">
+                <div class="details">
+                    <div class="field">
+                        <div class="field-label">Water Facility ID</div>
+                        <div class="field-value wf-id">{{wfId}}</div>
+                    </div>
+                    <div class="field">
+                        <div class="field-label">Geographic Code</div>
+                        <div class="field-value">{{geoCode}}</div>
+                    </div>
+                    <div class="field">
+                        <div class="field-label">Water Point Type</div>
+                        <div class="field-value"><span class="badge badge-type">{{waterPointType}}</span></div>
+                    </div>
+                    {{#if extractionType}}
+                    <div class="field">
+                        <div class="field-label">Extraction Type</div>
+                        <div class="field-value"><span class="badge badge-extraction">{{extractionType}}</span></div>
+                    </div>
+                    {{/if}}
+                    {{#if pumpType}}
+                    <div class="field">
+                        <div class="field-label">Pump Type</div>
+                        <div class="field-value">{{pumpType}}</div>
+                    </div>
+                    {{/if}}
+                    <div class="location-grid">
+                        <div class="field">
+                            <div class="field-label">County</div>
+                            <div class="field-value">{{location.county}}</div>
+                        </div>
+                        <div class="field">
+                            <div class="field-label">District</div>
+                            <div class="field-value">{{location.district}}</div>
+                        </div>
+                    </div>
+                    <div class="field">
+                        <div class="field-label">Community</div>
+                        <div class="field-value">{{location.community}}</div>
+                    </div>
+                    {{#if location.coordinates}}
+                    <div class="field">
+                        <div class="field-label">Coordinates</div>
+                        <div class="field-value coordinates">Lat: {{location.coordinates.lat}}, Lon: {{location.coordinates.lon}}{{#if location.coordinates.elevation}}, Elev: {{location.coordinates.elevation}}m{{/if}}</div>
+                    </div>
+                    {{/if}}
+                    {{#if owner}}
+                    <div class="field">
+                        <div class="field-label">Owner</div>
+                        <div class="field-value">{{owner}}</div>
+                    </div>
+                    {{/if}}
+                </div>
+                <div class="qr-section">
+                    <img src="{{qrCode}}" alt="QR Code for verification">
+                    <p>Scan to verify this certificate</p>
+                </div>
+            </div>
+            <div class="footer">
+                <p>This is a digitally signed certificate issued by Sunbird RC Digital Registry</p>
+                <p>Certificate generated on {{osCreatedAt}}</p>
+            </div>
+        </div>
+    </body>
+    </html>
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
   name: nginx-config
   namespace: sunbird-rc-namespace
 data:
@@ -80,6 +190,12 @@ data:
             proxy_pass http://public-key-service:3300/public-key-service/;
         }
 
+        # Certificate templates
+        location /templates/ {
+            alias /usr/share/nginx/templates/;
+            add_header Access-Control-Allow-Origin *;
+        }
+
         # Keycloak authentication
         location /auth/ {
             proxy_pass http://keycloak:8080/auth/;
@@ -150,10 +266,15 @@ spec:
             - name: nginx-config
               mountPath: /etc/nginx/conf.d/default.conf
               subPath: default.conf
+            - name: certificate-templates
+              mountPath: /usr/share/nginx/templates
       volumes:
         - name: nginx-config
           configMap:
             name: nginx-config
+        - name: certificate-templates
+          configMap:
+            name: certificate-templates
 ---
 apiVersion: v1
 kind: Service

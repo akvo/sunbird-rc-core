@@ -108,7 +108,7 @@ services:
       - certificate_enabled=${CERTIFICATE_ENABLED-false}
       - pdf_url=http://certificate-api:8078/api/v1/certificatePDF
       - certificate_health_check_url=http://certificate-api:8078/health
-      - template_base_url=http://registry:8081/api/v1/templates/ #Looks for certificate templates for pdf copy of the signed certificate
+      - template_base_url=http://nginx/templates/ #Looks for certificate templates for pdf copy of the signed certificate
       - sunbird_keycloak_user_set_password=true
       - filestorage_enabled=${FILESSTORAGE_ENABLED-false}
       - filestorage_connection_url=http://file-storage:9000
@@ -296,6 +296,31 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+  certificate-signer:
+    image: ghcr.io/sunbird-rc/sunbird-rc-certificate-signer:latest
+    environment:
+      - PORT=8079
+      - TIME_ZONE=UTC
+    ports:
+      - '8079:8079'
+    volumes:
+      - ./imports:/etc/signer
+    healthcheck:
+      test: ['CMD-SHELL', 'curl -f http://localhost:8079/health || exit 1']
+      interval: 30s
+      timeout: 10s
+      retries: 10
+  certificate-api:
+    image: ghcr.io/sunbird-rc/sunbird-rc-certificate-api:latest
+    environment:
+      - PORT=8078
+    ports:
+      - '8078:8078'
+    healthcheck:
+      test: ['CMD-SHELL', 'wget -nv -t1 --spider http://localhost:8078/health || exit 1']
+      interval: 30s
+      timeout: 10s
+      retries: 10
   file-storage:
     image: quay.io/minio/minio
     volumes:
@@ -390,6 +415,9 @@ services:
       retries: 10
   nginx:
     image: ghcr.io/sunbird-rc/sunbird-rc-nginx
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./templates:/usr/share/nginx/templates:ro
     ports:
       - '80:80'
     depends_on:
