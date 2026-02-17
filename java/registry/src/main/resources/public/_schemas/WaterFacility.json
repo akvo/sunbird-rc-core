@@ -15,69 +15,164 @@
       "title": "Water Facility",
       "description": "Schema for water facilities",
       "required": [
-        "wfName",
-        "typeOfWaterFacility",
+        "geoCode",
         "location",
-        "institution",
-        "foundingDate"
+        "waterPointType"
       ],
       "properties": {
         "wfId": {
           "type": "string",
           "description": "System-generated unique Water Facility ID"
         },
-        "wfName": {
+        "geoCode": {
           "type": "string",
-          "description": "Name of the Water Facility"
-        },
-        "typeOfWaterFacility": {
-          "type": "string",
-          "description": "Type of the Water Facility",
-          "enum": [
-            "Water Treatment Plant",
-            "Reservoir",
-            "Pumping Station",
-            "Distribution Center",
-            "Desalination Plant"
-          ]
+          "description": "Unique geographic code identifier"
         },
         "location": {
           "type": "object",
           "description": "Administrative location of the facility",
-          "required": ["province", "district", "village"],
+          "required": ["county", "district", "community"],
           "properties": {
-            "province": {
+            "county": {
               "type": "string",
-              "description": "Province name"
+              "description": "County name"
             },
             "district": {
               "type": "string",
-              "description": "District / Regency name"
+              "description": "District name"
             },
-            "village": {
+            "community": {
               "type": "string",
-              "description": "Village / Sub-district name"
+              "description": "Community name"
+            },
+            "coordinates": {
+              "type": "object",
+              "description": "Geographic coordinates",
+              "properties": {
+                "lat": {
+                  "type": "number",
+                  "minimum": -90,
+                  "maximum": 90,
+                  "description": "Latitude coordinate"
+                },
+                "lon": {
+                  "type": "number",
+                  "minimum": -180,
+                  "maximum": 180,
+                  "description": "Longitude coordinate"
+                },
+                "elevation": {
+                  "type": "number",
+                  "description": "Elevation in meters"
+                }
+              }
             }
           }
         },
-        "address": {
+        "waterPointType": {
           "type": "string",
-          "description": "Free-text address (optional)"
+          "description": "Type of water point",
+          "enum": [
+            "Protected dug well",
+            "Unprotected dug well",
+            "Tube well or borehole",
+            "Protected spring",
+            "Unprotected spring",
+            "Piped water into dwelling/plot/yard",
+            "Public tap/standpipe",
+            "Unequipped borehole",
+            "Rainwater (harvesting)",
+            "Sand/Sub-surface dam (with well or standpipe)",
+            "Other"
+          ]
         },
-        "institution": {
+        "waterPointTypeOther": {
           "type": "string",
-          "description": "Responsible institution"
+          "description": "Other water point type specification"
         },
-        "foundingDate": {
+        "extractionType": {
           "type": "string",
-          "format": "date",
-          "description": "Date of establishment (YYYY-MM-DD)"
+          "description": "Water extraction method",
+          "enum": [
+            "Manual",
+            "Electrical",
+            "Solar",
+            "Other"
+          ]
         },
-        "waterCapacity": {
+        "extractionTypeOther": {
+          "type": "string",
+          "description": "Other extraction type specification"
+        },
+        "pumpType": {
+          "type": "string",
+          "description": "Type of pump installed",
+          "enum": [
+            "Afridev",
+            "Consallen",
+            "India Mark",
+            "Kardia",
+            "Rope pump",
+            "Vergnet",
+            "Other"
+          ]
+        },
+        "pumpTypeOther": {
+          "type": "string",
+          "description": "Other pump type specification"
+        },
+        "numTaps": {
           "type": "number",
           "minimum": 0,
-          "maximum": 1000000,
-          "description": "Water capacity in cubic meters"
+          "description": "Number of taps"
+        },
+        "hasDepthInfo": {
+          "type": "boolean",
+          "description": "Whether depth information is available"
+        },
+        "depthMetres": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Depth in metres"
+        },
+        "installer": {
+          "type": "string",
+          "description": "Entity that installed the water point",
+          "enum": [
+            "Government",
+            "NGO",
+            "Private",
+            "Other"
+          ]
+        },
+        "installerOther": {
+          "type": "string",
+          "description": "Other installer specification"
+        },
+        "owner": {
+          "type": "string",
+          "description": "Owner of the water point",
+          "enum": [
+            "Community",
+            "Private Individual",
+            "School",
+            "NGO",
+            "Health Facility",
+            "Other institution",
+            "CBO",
+            "Private",
+            "Unknown",
+            "Other"
+          ]
+        },
+        "funder": {
+          "type": "string",
+          "description": "Funding organization or entity"
+        },
+        "photoUrl": {
+          "type": "string",
+          "format": "uri",
+          "description": "URL to photo of the water point"
         }
       }
     }
@@ -87,9 +182,9 @@
     "signedFields": [],
     "indexFields": [
       "wfId",
-      "wfName",
-      "typeOfWaterFacility",
-      "location.province",
+      "geoCode",
+      "waterPointType",
+      "location.county",
       "location.district"
     ],
     "uniqueIndexFields": ["wfId"],
