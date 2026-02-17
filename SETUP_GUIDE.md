@@ -8,6 +8,7 @@ This document chronicles the complete setup process for Sunbird RC, including al
 - [Initial Setup](#initial-setup)
 - [Fork Improvements](#fork-improvements)
 - [Additional Changes](#additional-changes)
+- [Local Authentication Setup](#local-authentication-setup)
 - [Challenges and Solutions](#challenges-and-solutions)
 - [Admin Portal Configuration](#admin-portal-configuration)
 - [Final Configuration](#final-configuration)
@@ -21,7 +22,7 @@ For experienced users who want to get started quickly:
 
 ```bash
 # 1. Clone this fork (includes automated setup)
-gh repo clone dedenbangkit/sunbird-rc-core && cd sunbird-rc-core
+gh repo clone akvo/sunbird-rc-core && cd sunbird-rc-core
 
 # 2. Start services using automated script
 ./start-sunbird.sh
@@ -47,7 +48,7 @@ For detailed setup and troubleshooting, continue reading below.
 ### 1. Repository Clone
 ```bash
 # Clone this improved fork
-gh repo clone dedenbangkit/sunbird-rc-core
+gh repo clone akvo/sunbird-rc-core
 cd sunbird-rc-core
 
 # Or clone the original (requires manual setup)
@@ -315,7 +316,181 @@ A comprehensive demo notebook is available:
 - Duplicate rejection testing
 - Bulk creation with wfId display
 - Export to CSV
-- Indonesian test data (Jawa Barat, Banten, DKI Jakarta, Bali)
+- Liberia WPM 2017 test data
+
+---
+
+## Local Authentication Setup
+
+By default, authentication is disabled for easier local development. To enable authentication (matching production behavior), follow these steps:
+
+### Step 1: Add keycloak to /etc/hosts
+
+This ensures tokens issued by Keycloak have a consistent issuer URL that works both inside Docker and from your host machine.
+
+```bash
+sudo sh -c 'echo "127.0.0.1 keycloak" >> /etc/hosts'
+```
+
+**Verify:**
+```bash
+grep keycloak /etc/hosts
+# Should output: 127.0.0.1 keycloak
+```
+
+### Step 2: Enable Authentication in .env
+
+Update your `.env` file:
+
+```bash
+# Enable authentication
+AUTHENTICATION_ENABLED=true
+
+# OAuth2 resource URI (must use keycloak hostname)
+oauth2_resource_uri=http://keycloak:8080/auth/realms/sunbird-rc
+
+# demo-api client credentials
+DEMO_API_CLIENT_ID=demo-api
+DEMO_API_CLIENT_SECRET=<your-secret-here>
+```
+
+### Step 3: Create demo-api Client in Keycloak
+
+**Option A: Via Keycloak Admin UI**
+
+1. Go to http://localhost:8080/auth/admin
+2. Login with `admin` / `admin`
+3. Select realm **"sunbird-rc"** (top left dropdown)
+4. Go to **Clients** → **Create**
+5. Set:
+   - Client ID: `demo-api`
+   - Client Protocol: `openid-connect`
+6. Click **Save**
+7. Configure:
+   - Access Type: `confidential`
+   - Service Accounts Enabled: `ON`
+   - Direct Access Grants Enabled: `ON`
+8. Click **Save**
+9. Go to **Credentials** tab and copy the Secret
+10. Update `.env` with the secret
+
+**Option B: Via API (automated)**
+
+```bash
+# Get admin token
+ADMIN_TOKEN=$(curl -s -X POST "http://localhost:8080/auth/realms/master/protocol/openid-connect/token" \
+  -H "Content-Type: application/x-www-form-urlencoded" \
+  -d "client_id=admin-cli" \
+  -d "username=admin" \
+  -d "password=admin" \
+  -d "grant_type=password" | jq -r '.access_token')
+
+# Create demo-api client
+curl -X POST "http://localhost:8080/auth/admin/realms/sunbird-rc/clients" \
+  -H "Authorization: Bearer $ADMIN_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "clientId": "demo-api",
+    "enabled": true,
+    "publicClient": false,
+    "serviceAccountsEnabled": true,
+    "directAccessGrantsEnabled": true,
+    "standardFlowEnabled": true,
+    "secret": "your-chosen-secret",
+    "redirectUris": ["*"],
+    "webOrigins": ["*"]
+  }'
+```
+
+### Step 4: Assign Admin Role to Service Account
+
+The demo-api service account needs the `admin` role to create/update/delete entities:
+
+```bash
+# Get admin token
+ADMIN_TOKEN=$(curl -s -X POST "http://localhost:8080/auth/realms/master/protocol/openid-connect/token" \
+  -H "Content-Type: application/x-www-form-urlencoded" \
+  -d "client_id=admin-cli" \
+  -d "username=admin" \
+  -d "password=admin" \
+  -d "grant_type=password" | jq -r '.access_token')
+
+# Get demo-api client UUID
+CLIENT_UUID=$(curl -s "http://localhost:8080/auth/admin/realms/sunbird-rc/clients?clientId=demo-api" \
+  -H "Authorization: Bearer $ADMIN_TOKEN" | jq -r '.[0].id')
+
+# Get service account user ID
+SERVICE_ACCOUNT_ID=$(curl -s "http://localhost:8080/auth/admin/realms/sunbird-rc/clients/$CLIENT_UUID/service-account-user" \
+  -H "Authorization: Bearer $ADMIN_TOKEN" | jq -r '.id')
+
+# Get admin role
+ADMIN_ROLE=$(curl -s "http://localhost:8080/auth/admin/realms/sunbird-rc/roles/admin" \
+  -H "Authorization: Bearer $ADMIN_TOKEN")
+
+# Assign admin role
+curl -X POST "http://localhost:8080/auth/admin/realms/sunbird-rc/users/$SERVICE_ACCOUNT_ID/role-mappings/realm" \
+  -H "Authorization: Bearer $ADMIN_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d "[$ADMIN_ROLE]"
+```
+
+### Step 5: Restart Registry
+
+```bash
+docker compose up -d registry
+```
+
+Wait for the registry to be healthy (~30-40 seconds).
+
+### Step 6: Test Authentication
+
+```bash
+# Get token
+TOKEN=$(curl -s -X POST "http://keycloak:8080/auth/realms/sunbird-rc/protocol/openid-connect/token" \
+  -H "Content-Type: application/x-www-form-urlencoded" \
+  -d "client_id=demo-api" \
+  -d "client_secret=<your-secret>" \
+  -d "grant_type=client_credentials" | jq -r '.access_token')
+
+# Test without token (should return 401)
+curl -s -w "\nHTTP: %{http_code}\n" http://localhost:8081/api/v1/WaterFacility
+
+# Test with token (should return 200)
+curl -s -w "\nHTTP: %{http_code}\n" http://localhost:8081/api/v1/WaterFacility \
+  -H "Authorization: Bearer $TOKEN"
+```
+
+### Using the Notebook with Authentication
+
+The notebook (`sunbird-rc-water-facility-demo.ipynb`) is configured to use authentication. Set the client secret before running:
+
+```bash
+# Option 1: Environment variable
+export DEMO_API_CLIENT_SECRET=<your-secret>
+jupyter notebook sunbird-rc-water-facility-demo.ipynb
+
+# Option 2: Enter when prompted
+# Just run the notebook and it will prompt for the secret
+```
+
+### Troubleshooting Authentication
+
+**Error: "Invalid issuer"**
+- Ensure `keycloak` is in `/etc/hosts` pointing to `127.0.0.1`
+- Ensure `oauth2_resource_uri` in `.env` uses `http://keycloak:8080/...`
+
+**Error: "User is not allowed to perform the operation"**
+- The service account doesn't have the `admin` role
+- Run Step 4 to assign the role
+- Get a fresh token after assigning the role
+
+**Error: "Invalid client credentials"**
+- Check the client secret matches between Keycloak and `.env`
+- Verify the client exists: check Keycloak Admin UI → Clients
+
+**Duplicate errors when creating facilities**
+- Old data may exist from when auth was disabled
+- Clean up: `docker exec sunbird-rc-core-db-1 psql -U postgres -d registry -c "DELETE FROM \"V_WaterFacility\";"`
 
 ---
 
@@ -947,7 +1122,7 @@ ports:
 ## Support and Contribution
 
 ### This Fork
-- **Repository**: https://github.com/dedenbangkit/sunbird-rc-core
+- **Repository**: https://github.com/akvo/sunbird-rc-core
 - **Issues**: Report fork-specific issues here
 - **Pull Requests**: Contributions welcome!
 
@@ -965,11 +1140,12 @@ ports:
 
 ---
 
-**Document Version**: 1.2
-**Last Updated**: 2026-01-09
+**Document Version**: 1.3
+**Last Updated**: 2026-02-17
 **Tested With**: Sunbird RC v2.0.2
 
 ### Changelog
+- **v1.3** (2026-02-17): Added local authentication setup guide with demo-api client configuration, Keycloak role assignment, and troubleshooting
 - **v1.2** (2026-01-09): Added WaterFacility schema with custom wfId generation, duplicate rejection, AOP-based entity data capture, and Jupyter notebook demo
 - **v1.1** (2025-12-02): Added automated startup script, updated vault unsealing documentation, added known issues section
 - **v1.0** (2025-11-27): Initial comprehensive setup guide
