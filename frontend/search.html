@@ -10,6 +10,7 @@
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
     <style>
         * {
             margin: 0;
@@ -700,8 +701,29 @@
             </a>
         </nav>
 
+        <!-- Auth Setup Section -->
+        <div class="search-section" id="authSetupSection">
+            <div class="search-title">
+                <i class="fas fa-key"></i>
+                <h3>Setup Authentication</h3>
+            </div>
+            <p style="color: #718096; font-size: 13px; margin-bottom: 16px; text-align: center;">
+                Scan the credentials QR code provided by your administrator to authenticate this device.
+            </p>
+            <div id="authReader" style="border-radius: 16px; overflow: hidden; margin-bottom: 16px;"></div>
+            <button id="startAuthBtn" class="btn btn-primary" onclick="startAuthScanner()" style="width: 100%;">
+                <i class="fas fa-camera"></i>
+                Scan Credentials QR
+            </button>
+            <button id="stopAuthBtn" class="btn btn-secondary" onclick="stopAuthScanner()" style="display:none; width: 100%; margin-top: 10px;">
+                <i class="fas fa-stop"></i>
+                Stop Scanner
+            </button>
+            <div id="authStatus" class="results-info" style="margin-top: 16px;"></div>
+        </div>
+
         <!-- List View -->
-        <div id="listView">
+        <div id="listView" style="display:none;">
             <div class="search-section">
                 <div class="search-title">
                     <i class="fas fa-search"></i>
@@ -754,6 +776,9 @@
 
         <footer>
             <p>Powered by <a href="https://github.com/Sunbird-RC/sunbird-rc-core">Sunbird RC</a></p>
+            <p style="margin-top: 12px;">
+                <a href="#" onclick="confirmResetAuth(); return false;" style="font-size: 11px; color: rgba(255,255,255,0.4); border: 1px solid rgba(255,255,255,0.2); padding: 4px 10px; border-radius: 12px; text-decoration: none;">Reset Authentication</a>
+            </p>
         </footer>
     </div>
 
@@ -762,6 +787,13 @@
         const ENTITY_NAME = 'WaterFacility';
         const QR_BASE_URL = window.location.origin;
         const PAGE_SIZE = 10;
+        // Keycloak URL - local uses keycloak:8080 (requires /etc/hosts entry), production uses public domain
+        const KEYCLOAK_BASE = window.location.hostname === 'localhost'
+            ? 'http://keycloak:8080/auth'
+            : `${window.location.origin}/auth`;
+        const KEYCLOAK_URL = `${KEYCLOAK_BASE}/realms/sunbird-rc/protocol/openid-connect/token`;
+        const STORAGE_KEY_CREDENTIALS = 'wf_scanner_credentials';
+        const STORAGE_KEY_TOKEN = 'wf_scanner_token';
 
         let currentPage = 1;
         let totalRecords = 0;
@@ -769,6 +801,216 @@
         let filteredFacilities = [];
         let currentSearchQuery = '';
         let facilityMap = null;
+
+        // ==================== AUTH MODULE ====================
+
+        function getStoredCredentials() {
+            try {
+                const stored = localStorage.getItem(STORAGE_KEY_CREDENTIALS);
+                return stored ? JSON.parse(stored) : null;
+            } catch (e) {
+                return null;
+            }
+        }
+
+        function storeCredentials(credentials) {
+            localStorage.setItem(STORAGE_KEY_CREDENTIALS, JSON.stringify(credentials));
+        }
+
+        function getStoredToken() {
+            try {
+                const stored = localStorage.getItem(STORAGE_KEY_TOKEN);
+                return stored ? JSON.parse(stored) : null;
+            } catch (e) {
+                return null;
+            }
+        }
+
+        function storeToken(tokenData) {
+            tokenData.expires_at = Date.now() + (tokenData.expires_in * 1000) - 30000;
+            localStorage.setItem(STORAGE_KEY_TOKEN, JSON.stringify(tokenData));
+        }
+
+        function isTokenExpired() {
+            const token = getStoredToken();
+            if (!token || !token.expires_at) return true;
+            return Date.now() >= token.expires_at;
+        }
+
+        async function fetchAccessToken(credentials) {
+            const response = await fetch(KEYCLOAK_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: new URLSearchParams({
+                    grant_type: 'client_credentials',
+                    client_id: credentials.client_id,
+                    client_secret: credentials.client_secret
+                })
+            });
+
+            if (!response.ok) {
+                const error = await response.text();
+                throw new Error(`Authentication failed: ${error}`);
+            }
+
+            return await response.json();
+        }
+
+        async function getAuthHeaders(forceRefresh = false) {
+            const credentials = getStoredCredentials();
+            if (!credentials) {
+                throw new Error('No credentials stored');
+            }
+
+            if (forceRefresh || isTokenExpired()) {
+                const tokenData = await fetchAccessToken(credentials);
+                storeToken(tokenData);
+            }
+
+            const token = getStoredToken();
+            return {
+                'Authorization': `Bearer ${token.access_token}`,
+                'Content-Type': 'application/json'
+            };
+        }
+
+        async function authenticatedFetch(url, options = {}) {
+            const credentials = getStoredCredentials();
+            if (!credentials) {
+                throw new Error('No credentials stored');
+            }
+
+            // First attempt with current token
+            let headers = await getAuthHeaders();
+            let response = await fetch(url, { ...options, headers });
+
+            // If 401, refresh token and retry once
+            if (response.status === 401) {
+                console.log('Token expired, refreshing...');
+                try {
+                    headers = await getAuthHeaders(true); // Force refresh
+                    response = await fetch(url, { ...options, headers });
+                } catch (refreshError) {
+                    // Credentials are invalid, clear auth
+                    console.error('Token refresh failed:', refreshError);
+                    clearAuth();
+                    throw new Error('Session expired. Please re-authenticate.');
+                }
+            }
+
+            return response;
+        }
+
+        function clearAuth() {
+            localStorage.removeItem(STORAGE_KEY_CREDENTIALS);
+            localStorage.removeItem(STORAGE_KEY_TOKEN);
+            showAuthSetup();
+        }
+
+        function confirmResetAuth() {
+            if (confirm('Are you sure you want to reset authentication? You will need to scan the credentials QR code again.')) {
+                clearAuth();
+            }
+        }
+
+        function showAuthSetup() {
+            $('#authSetupSection').show();
+            $('#listView').hide();
+            $('#detailView').removeClass('show');
+        }
+
+        function showMainApp() {
+            $('#authSetupSection').hide();
+            $('#listView').show();
+            loadFacilities();
+        }
+
+        let html5QrCode = null;
+        let isAuthScanning = false;
+
+        function showAuthStatus(message, isError = false) {
+            const $status = $('#authStatus');
+            $status.html(message);
+            $status.css('color', isError ? '#c53030' : 'rgba(255,255,255,0.8)');
+        }
+
+        function parseCredentialsQR(text) {
+            try {
+                const data = JSON.parse(text);
+                if (data.client_id && data.client_secret) {
+                    return data;
+                }
+            } catch (e) {
+                // Not JSON
+            }
+            return null;
+        }
+
+        async function onAuthScanSuccess(decodedText) {
+            const credentials = parseCredentialsQR(decodedText);
+
+            if (credentials) {
+                stopAuthScanner();
+                showAuthStatus('Verifying credentials...');
+
+                try {
+                    const tokenData = await fetchAccessToken(credentials);
+                    storeCredentials(credentials);
+                    storeToken(tokenData);
+                    showAuthStatus('Authentication successful!');
+                    setTimeout(() => showMainApp(), 1000);
+                } catch (error) {
+                    showAuthStatus(`Authentication failed: ${error.message}`, true);
+                    $('#startAuthBtn').show();
+                }
+            } else {
+                showAuthStatus('Invalid credentials QR code', true);
+            }
+        }
+
+        function onAuthScanFailure(error) {
+            // Ignore - no QR code in frame
+        }
+
+        async function startAuthScanner() {
+            try {
+                html5QrCode = new Html5Qrcode("authReader");
+
+                await html5QrCode.start(
+                    { facingMode: "environment" },
+                    {
+                        fps: 10,
+                        qrbox: { width: 250, height: 250 }
+                    },
+                    onAuthScanSuccess,
+                    onAuthScanFailure
+                );
+
+                isAuthScanning = true;
+                $('#startAuthBtn').hide();
+                $('#stopAuthBtn').show();
+                showAuthStatus('Point camera at credentials QR code...');
+            } catch (err) {
+                console.error('Auth scanner error:', err);
+                showAuthStatus(`Camera error: ${err.message || err}`, true);
+            }
+        }
+
+        async function stopAuthScanner() {
+            if (html5QrCode && isAuthScanning) {
+                try {
+                    await html5QrCode.stop();
+                } catch (err) {
+                    console.error('Stop error:', err);
+                }
+                isAuthScanning = false;
+            }
+
+            $('#startAuthBtn').show();
+            $('#stopAuthBtn').hide();
+        }
+
+        // ==================== END AUTH MODULE ====================
 
         function showLoading(show) {
             $('#loading').toggle(show);
@@ -781,11 +1023,14 @@
             $('#pagination').hide();
 
             try {
-                const response = await fetch(`${API_BASE_URL}/registry/api/v1/${ENTITY_NAME}/search`, {
+                const response = await authenticatedFetch(`${API_BASE_URL}/api/v1/${ENTITY_NAME}/search`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ filters: {} })
                 });
+
+                if (!response.ok) {
+                    throw new Error(`Failed to load facilities`);
+                }
 
                 const data = await response.json();
                 allFacilities = data.data || [];
@@ -979,11 +1224,11 @@
                 container.innerHTML = '';
                 new QRCode(container, {
                     text: url,
-                    width: 140,
-                    height: 140,
+                    width: 256,
+                    height: 256,
                     colorDark: '#2c5282',
                     colorLight: '#ffffff',
-                    correctLevel: QRCode.CorrectLevel.M
+                    correctLevel: QRCode.CorrectLevel.H
                 });
             }
         }
@@ -1119,14 +1364,28 @@
         }
 
         // Event handlers
-        $(document).ready(function() {
+        $(document).ready(async function() {
             $('#searchInput').on('keypress', function(e) {
                 if (e.key === 'Enter') {
                     search();
                 }
             });
 
-            loadFacilities();
+            const credentials = getStoredCredentials();
+
+            if (!credentials) {
+                // No credentials stored, show auth setup
+                showAuthSetup();
+            } else {
+                // Verify token is valid or can be refreshed
+                try {
+                    await getAuthHeaders();
+                    showMainApp();
+                } catch (error) {
+                    console.error('Auth verification failed:', error);
+                    clearAuth();
+                }
+            }
         });
     </script>
 </body>
