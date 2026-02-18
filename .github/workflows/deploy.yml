@@ -43,6 +43,22 @@ jobs:
           gcloud-sa: ${{ secrets.GCLOUD_SERVICE_ACCOUNT_REGISTRY }}
           cluster-name: "test"
 
+      - name: Docker Build Nginx
+        uses: ./composite-actions/.github/actions/docker-build
+        with:
+          app-name: "sunbird-rc"
+          service-name: "nginx"
+          dockerfile-location: "Dockerfile.nginx"
+          cluster-name: "test"
+
+      - name: Docker Push Nginx
+        uses: ./composite-actions/.github/actions/docker-push
+        with:
+          app-name: "sunbird-rc"
+          service-name: "nginx"
+          gcloud-sa: ${{ secrets.GCLOUD_SERVICE_ACCOUNT_REGISTRY }}
+          cluster-name: "test"
+
   rollout:
     name: Rollout to Test Cluster
     needs: build-push
@@ -67,6 +83,16 @@ jobs:
           app-name: "sunbird-rc"
           deployment-name: "registry"
           container-name: "registry"
+          cluster-name: "test"
+          namespace-name: "sunbird-rc-namespace"
+          gcloud-sa: ${{ secrets.GCLOUD_SERVICE_ACCOUNT_K8S }}
+
+      - name: Rollout Nginx
+        uses: ./composite-actions/.github/actions/k8s-rollout
+        with:
+          app-name: "sunbird-rc"
+          deployment-name: "nginx"
+          container-name: "nginx"
           cluster-name: "test"
           namespace-name: "sunbird-rc-namespace"
           gcloud-sa: ${{ secrets.GCLOUD_SERVICE_ACCOUNT_K8S }}
