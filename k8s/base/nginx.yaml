@@ -19,6 +19,13 @@ data:
             try_files $uri $uri/ /index.html;
         }
 
+        # QR Scanner and Facility Browser
+        location /scanner {
+            alias /usr/share/nginx/frontend/;
+            index index.html;
+            try_files $uri $uri/ /index.html;
+        }
+
         # Registry API
         location /registry/ {
             proxy_pass http://registry:8081/;

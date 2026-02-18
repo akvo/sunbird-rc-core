@@ -1,0 +1,5 @@
+# Custom nginx image with frontend static files baked in
+FROM ghcr.io/sunbird-rc/sunbird-rc-nginx
+
+# Copy QR scanner and facility browser frontend
+COPY frontend/ /usr/share/nginx/frontend/

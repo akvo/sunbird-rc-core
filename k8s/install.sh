@@ -159,6 +159,43 @@ build_registry_image() {
     log_info "Custom registry image deployed: ${REGISTRY_IMAGE_FULL}"
 }
 
+# Build and push custom nginx image with frontend files baked in
+build_nginx_image() {
+    log_info "Building custom nginx image with frontend files..."
+
+    REPO_ROOT="${SCRIPT_DIR}/.."
+    DOCKERFILE="${REPO_ROOT}/Dockerfile.nginx"
+    REGISTRY_HOST="${LOCAL_REGISTRY:-192.168.21.231:5000}"
+    NGINX_IMAGE="${REGISTRY_HOST}/sunbird-rc-nginx"
+    IMAGE_TAG="v$(date +%Y%m%d%H%M%S)"
+    NGINX_IMAGE_FULL="${NGINX_IMAGE}:${IMAGE_TAG}"
+
+    if [ ! -f "$DOCKERFILE" ]; then
+        log_warn "Dockerfile.nginx not found at $DOCKERFILE — using base image without frontend"
+        return 0
+    fi
+
+    # Build
+    log_info "Building image: ${NGINX_IMAGE_FULL}"
+    docker build -t "${NGINX_IMAGE_FULL}" -f "$DOCKERFILE" "$REPO_ROOT" || {
+        log_error "Docker build failed"
+        return 1
+    }
+
+    # Push
+    log_info "Pushing image to local registry..."
+    docker push "${NGINX_IMAGE_FULL}" || {
+        log_error "Docker push failed — ensure local registry is running and insecure-registries is configured"
+        return 1
+    }
+
+    # Update the nginx deployment image
+    log_info "Updating nginx deployment to use ${NGINX_IMAGE_FULL}"
+    kubectl set image deployment/nginx nginx="${NGINX_IMAGE_FULL}" -n $NAMESPACE
+
+    log_info "Custom nginx image deployed: ${NGINX_IMAGE_FULL}"
+}
+
 # Helper: run curl command via a temporary pod in the cluster
 # Creates a pod, waits for completion, gets clean logs, then cleans up.
 # This avoids the issue of kubectl's "pod deleted" message contaminating output.
@@ -563,8 +600,17 @@ setup_auto_unseal() {
 }
 
 # Configure external URL for Keycloak and registry
-# This sets KEYCLOAK_FRONTEND_URL and OAUTH2_RESOURCES_0_URI so that
-# tokens issued by Keycloak match the issuer expected by registry.
+# Sets KEYCLOAK_FRONTEND_URL so tokens use the external issuer URL.
+#
+# Note: OAUTH2_RESOURCES_0_URI on the registry must stay as the internal
+# HTTP endpoint (http://keycloak:8080/auth/realms/sunbird-rc) because
+# Spring Boot fetches the OIDC discovery document from this URI to get
+# the JWK signing keys. The issuer in the discovery response will still
+# match the external URL thanks to KEYCLOAK_FRONTEND_URL.
+#
+# For HTTP external URLs (e.g. local k3s), we also set
+# OAUTH2_RESOURCES_0_URI to the external URL since the registry can
+# reach it directly without TLS issues.
 configure_external_url() {
     if [ -z "$EXTERNAL_URL" ]; then
         log_info "No EXTERNAL_URL set — skipping external URL configuration"
@@ -573,17 +619,24 @@ configure_external_url() {
 
     log_info "Configuring external URL: $EXTERNAL_URL"
 
-    # Set Keycloak frontend URL
+    # Set Keycloak frontend URL (affects issuer in JWT tokens)
     kubectl set env deployment/keycloak \
         KEYCLOAK_FRONTEND_URL="${EXTERNAL_URL}/auth" \
         -n $NAMESPACE
 
-    # Set registry OAUTH2 issuer to match Keycloak frontend URL
-    kubectl set env deployment/registry \
-        OAUTH2_RESOURCES_0_URI="${EXTERNAL_URL}/auth/realms/sunbird-rc" \
-        -n $NAMESPACE
+    # For HTTP URLs, registry can reach the external endpoint directly.
+    # For HTTPS URLs, keep internal URI to avoid JWK fetch TLS issues.
+    if [[ "$EXTERNAL_URL" == http://* ]]; then
+        kubectl set env deployment/registry \
+            OAUTH2_RESOURCES_0_URI="${EXTERNAL_URL}/auth/realms/sunbird-rc" \
+            -n $NAMESPACE
+        log_info "Registry OAUTH2 URI set to external URL (HTTP)"
+    else
+        log_info "Registry OAUTH2 URI kept as internal (HTTPS external URL)"
+        log_info "Keycloak OIDC issuer will match via KEYCLOAK_FRONTEND_URL"
+    fi
 
-    log_info "External URL configured for Keycloak and registry"
+    log_info "External URL configured"
 }
 
 # Wait for all services to be ready
@@ -720,6 +773,7 @@ install() {
     setup_minio
     setup_kafka
     build_registry_image
+    build_nginx_image
     restart_did_services
 
     log_info "Waiting for services to stabilize..."

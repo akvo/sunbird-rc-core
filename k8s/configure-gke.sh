@@ -412,6 +412,39 @@ build_registry_image() {
     log_info "Custom registry image deployed: ${REGISTRY_IMAGE_FULL}"
 }
 
+# Build and push custom nginx image with frontend files baked in
+build_nginx_image() {
+    log_info "Building custom nginx image with frontend files..."
+
+    DOCKERFILE="${REPO_ROOT}/Dockerfile.nginx"
+    REGISTRY_HOST="${REGISTRY_HOST:-eu.gcr.io/akvo-lumen}"
+    NGINX_IMAGE="${REGISTRY_HOST}/sunbird-rc/nginx"
+    IMAGE_TAG="latest-test"
+    NGINX_IMAGE_FULL="${NGINX_IMAGE}:${IMAGE_TAG}"
+
+    if [ ! -f "$DOCKERFILE" ]; then
+        log_warn "Dockerfile.nginx not found — using base image without frontend"
+        return 0
+    fi
+
+    log_info "Building image: ${NGINX_IMAGE_FULL}"
+    docker build -t "${NGINX_IMAGE_FULL}" -f "$DOCKERFILE" "$REPO_ROOT" || {
+        log_error "Docker build failed"
+        return 1
+    }
+
+    log_info "Pushing image..."
+    docker push "${NGINX_IMAGE_FULL}" || {
+        log_error "Docker push failed — ensure you have access to eu.gcr.io/akvo-lumen"
+        return 1
+    }
+
+    log_info "Updating nginx deployment..."
+    kubectl set image deployment/nginx nginx="${NGINX_IMAGE_FULL}" -n $NAMESPACE
+
+    log_info "Custom nginx image deployed: ${NGINX_IMAGE_FULL}"
+}
+
 # Restart DID services
 restart_did_services() {
     log_info "Restarting DID services..."
@@ -508,6 +541,10 @@ case "${1:-}" in
         check_prerequisites
         build_registry_image
         ;;
+    --build-nginx)
+        check_prerequisites
+        build_nginx_image
+        ;;
     --status)
         show_status
         ;;
@@ -521,6 +558,7 @@ case "${1:-}" in
         echo "  --minio         Only setup MinIO bucket"
         echo "  --kafka         Only setup Kafka topics"
         echo "  --build-image   Build and push custom registry image"
+        echo "  --build-nginx   Build and push custom nginx image with frontend"
         echo "  --status        Show status of all services"
         echo "  --help          Show this help"
         ;;
