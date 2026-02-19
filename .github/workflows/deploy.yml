@@ -43,6 +43,12 @@ jobs:
           gcloud-sa: ${{ secrets.GCLOUD_SERVICE_ACCOUNT_REGISTRY }}
           cluster-name: "test"
 
+      - name: Set Dashboard OAuth Credentials
+        working-directory: src
+        run: |
+          echo "VITE_OAUTH_CLIENT_ID=${{ secrets.VITE_OAUTH_CLIENT_ID }}" > dashboard/.env
+          echo "VITE_OAUTH_CLIENT_SECRET=${{ secrets.VITE_OAUTH_CLIENT_SECRET }}" >> dashboard/.env
+
       - name: Docker Build Nginx
         uses: ./composite-actions/.github/actions/docker-build
         with:

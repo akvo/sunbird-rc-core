@@ -427,11 +427,23 @@ build_nginx_image() {
         return 0
     fi
 
+    # Inject dashboard OAuth credentials from realm-export.json
+    REALM_EXPORT="${REPO_ROOT}/imports/realm-export.json"
+    DASHBOARD_ENV="${REPO_ROOT}/dashboard/.env"
+    DEMO_API_SECRET=$(jq -r '.clients[] | select(.clientId=="demo-api") | .secret' "$REALM_EXPORT" 2>/dev/null || echo "")
+    if [ -n "$DEMO_API_SECRET" ]; then
+        log_info "Injecting dashboard OAuth credentials from realm-export.json"
+        echo "VITE_OAUTH_CLIENT_ID=demo-api" > "$DASHBOARD_ENV"
+        echo "VITE_OAUTH_CLIENT_SECRET=$DEMO_API_SECRET" >> "$DASHBOARD_ENV"
+    fi
+
     log_info "Building image: ${NGINX_IMAGE_FULL}"
     docker build -t "${NGINX_IMAGE_FULL}" -f "$DOCKERFILE" "$REPO_ROOT" || {
+        rm -f "$DASHBOARD_ENV"
         log_error "Docker build failed"
         return 1
     }
+    rm -f "$DASHBOARD_ENV"
 
     log_info "Pushing image..."
     docker push "${NGINX_IMAGE_FULL}" || {
