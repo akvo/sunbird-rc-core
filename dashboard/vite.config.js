@@ -9,4 +9,17 @@ export default defineConfig({
     outDir: 'dist',
     assetsDir: 'assets',
   },
+  server: {
+    proxy: {
+      '/registry': {
+        target: 'http://localhost:8081',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/registry/, ''),
+      },
+      '/auth': {
+        target: 'http://keycloak:8080',
+        changeOrigin: true,
+      },
+    },
+  },
 })
