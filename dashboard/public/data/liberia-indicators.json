@@ -1,0 +1,178 @@
+{
+  "categories": [
+    {
+      "id": "location",
+      "name": "Location",
+      "description": "Geographic and administrative location data"
+    },
+    {
+      "id": "infrastructure",
+      "name": "Infrastructure",
+      "description": "Water point infrastructure characteristics"
+    },
+    {
+      "id": "technology",
+      "name": "Technology",
+      "description": "Extraction and pump technology"
+    },
+    {
+      "id": "management",
+      "name": "Management",
+      "description": "Ownership, installation and funding"
+    }
+  ],
+  "indicators": [
+    {
+      "id": "county",
+      "name": "County",
+      "category_id": "location",
+      "type": "dimension",
+      "field": "county",
+      "filterable": true,
+      "aggregatable": true
+    },
+    {
+      "id": "district",
+      "name": "District",
+      "category_id": "location",
+      "type": "dimension",
+      "field": "district",
+      "filterable": true,
+      "aggregatable": true
+    },
+    {
+      "id": "community",
+      "name": "Community",
+      "category_id": "location",
+      "type": "dimension",
+      "field": "community",
+      "filterable": true,
+      "aggregatable": true
+    },
+    {
+      "id": "elevation",
+      "name": "Elevation (m)",
+      "category_id": "location",
+      "type": "measure",
+      "field": "elevation",
+      "filterable": false,
+      "aggregatable": false
+    },
+    {
+      "id": "water_point_type",
+      "name": "Water Point Type",
+      "category_id": "infrastructure",
+      "type": "dimension",
+      "field": "water_point_type",
+      "filterable": true,
+      "aggregatable": true,
+      "options": [
+        "Tube well or borehole",
+        "Protected dug well",
+        "Unprotected dug well",
+        "Protected spring",
+        "Unprotected spring",
+        "Public tap/standpipe",
+        "Piped water into dwelling/plot/yard",
+        "Rainwater (harvesting)",
+        "Sand/Sub-surface dam (with well or standpipe)",
+        "Unequipped borehole",
+        "Other"
+      ]
+    },
+    {
+      "id": "num_taps",
+      "name": "Number of Taps",
+      "category_id": "infrastructure",
+      "type": "measure",
+      "field": "num_taps",
+      "filterable": false,
+      "aggregatable": true
+    },
+    {
+      "id": "depth_metres",
+      "name": "Depth (m)",
+      "category_id": "infrastructure",
+      "type": "measure",
+      "field": "depth_metres",
+      "filterable": false,
+      "aggregatable": false
+    },
+    {
+      "id": "extraction_type",
+      "name": "Extraction Type",
+      "category_id": "technology",
+      "type": "dimension",
+      "field": "extraction_type",
+      "filterable": true,
+      "aggregatable": true,
+      "options": [
+        "Manual",
+        "Electrical",
+        "Solar",
+        "Other"
+      ]
+    },
+    {
+      "id": "pump_type",
+      "name": "Pump Type",
+      "category_id": "technology",
+      "type": "dimension",
+      "field": "pump_type",
+      "filterable": true,
+      "aggregatable": true,
+      "options": [
+        "Afridev",
+        "India Mark",
+        "Vergnet",
+        "Kardia",
+        "Consallen",
+        "Rope pump",
+        "Other"
+      ]
+    },
+    {
+      "id": "owner",
+      "name": "Owner",
+      "category_id": "management",
+      "type": "dimension",
+      "field": "owner",
+      "filterable": true,
+      "aggregatable": true,
+      "options": [
+        "Community",
+        "CBO",
+        "NGO",
+        "Private Individual",
+        "School",
+        "Health Facility",
+        "Other institution",
+        "Unknown"
+      ]
+    },
+    {
+      "id": "installer",
+      "name": "Installer",
+      "category_id": "management",
+      "type": "dimension",
+      "field": "installer",
+      "filterable": true,
+      "aggregatable": true,
+      "options": [
+        "Government",
+        "NGO",
+        "Private",
+        "Other"
+      ]
+    },
+    {
+      "id": "funder",
+      "name": "Funder",
+      "category_id": "management",
+      "type": "dimension",
+      "field": "funder",
+      "filterable": true,
+      "aggregatable": true
+    }
+  ]
+}

@@ -1,0 +1,920 @@
+{
+  "levels": [
+    {
+      "id": 1,
+      "name": "county"
+    },
+    {
+      "id": 2,
+      "name": "district"
+    }
+  ],
+  "data": [
+    {
+      "id": 1,
+      "parent_id": null,
+      "level_id": 1,
+      "name": "Bomi"
+    },
+    {
+      "id": 2,
+      "parent_id": null,
+      "level_id": 1,
+      "name": "Bong"
+    },
+    {
+      "id": 3,
+      "parent_id": null,
+      "level_id": 1,
+      "name": "Gbarpolu"
+    },
+    {
+      "id": 4,
+      "parent_id": null,
+      "level_id": 1,
+      "name": "Grand Bassa"
+    },
+    {
+      "id": 5,
+      "parent_id": null,
+      "level_id": 1,
+      "name": "Grand Cape Mount"
+    },
+    {
+      "id": 6,
+      "parent_id": null,
+      "level_id": 1,
+      "name": "Grand Gedeh"
+    },
+    {
+      "id": 7,
+      "parent_id": null,
+      "level_id": 1,
+      "name": "Grand Kru"
+    },
+    {
+      "id": 8,
+      "parent_id": null,
+      "level_id": 1,
+      "name": "Lofa"
+    },
+    {
+      "id": 9,
+      "parent_id": null,
+      "level_id": 1,
+      "name": "Margibi"
+    },
+    {
+      "id": 10,
+      "parent_id": null,
+      "level_id": 1,
+      "name": "Maryland"
+    },
+    {
+      "id": 11,
+      "parent_id": null,
+      "level_id": 1,
+      "name": "Montserrado"
+    },
+    {
+      "id": 12,
+      "parent_id": null,
+      "level_id": 1,
+      "name": "Nimba"
+    },
+    {
+      "id": 13,
+      "parent_id": null,
+      "level_id": 1,
+      "name": "River Cess"
+    },
+    {
+      "id": 14,
+      "parent_id": null,
+      "level_id": 1,
+      "name": "River Gee"
+    },
+    {
+      "id": 15,
+      "parent_id": null,
+      "level_id": 1,
+      "name": "Sinoe"
+    },
+    {
+      "id": 16,
+      "parent_id": 1,
+      "level_id": 2,
+      "name": "Dowein"
+    },
+    {
+      "id": 17,
+      "parent_id": 1,
+      "level_id": 2,
+      "name": "Klay"
+    },
+    {
+      "id": 18,
+      "parent_id": 1,
+      "level_id": 2,
+      "name": "Senjeh"
+    },
+    {
+      "id": 19,
+      "parent_id": 1,
+      "level_id": 2,
+      "name": "Suehn Mecca"
+    },
+    {
+      "id": 20,
+      "parent_id": 2,
+      "level_id": 2,
+      "name": "Boinsen"
+    },
+    {
+      "id": 21,
+      "parent_id": 2,
+      "level_id": 2,
+      "name": "Fuamah"
+    },
+    {
+      "id": 22,
+      "parent_id": 2,
+      "level_id": 2,
+      "name": "Jorquelleh"
+    },
+    {
+      "id": 23,
+      "parent_id": 2,
+      "level_id": 2,
+      "name": "Kokoyah"
+    },
+    {
+      "id": 24,
+      "parent_id": 2,
+      "level_id": 2,
+      "name": "Kpaai"
+    },
+    {
+      "id": 25,
+      "parent_id": 2,
+      "level_id": 2,
+      "name": "Panta"
+    },
+    {
+      "id": 26,
+      "parent_id": 2,
+      "level_id": 2,
+      "name": "Salala"
+    },
+    {
+      "id": 27,
+      "parent_id": 2,
+      "level_id": 2,
+      "name": "Sanoyeah"
+    },
+    {
+      "id": 28,
+      "parent_id": 2,
+      "level_id": 2,
+      "name": "Suakoko"
+    },
+    {
+      "id": 29,
+      "parent_id": 2,
+      "level_id": 2,
+      "name": "Tukpahbllee"
+    },
+    {
+      "id": 30,
+      "parent_id": 2,
+      "level_id": 2,
+      "name": "Yeallequelleh"
+    },
+    {
+      "id": 31,
+      "parent_id": 2,
+      "level_id": 2,
+      "name": "Zota"
+    },
+    {
+      "id": 32,
+      "parent_id": 3,
+      "level_id": 2,
+      "name": "Belleh"
+    },
+    {
+      "id": 33,
+      "parent_id": 3,
+      "level_id": 2,
+      "name": "Bokomu"
+    },
+    {
+      "id": 34,
+      "parent_id": 3,
+      "level_id": 2,
+      "name": "Bopolu"
+    },
+    {
+      "id": 35,
+      "parent_id": 3,
+      "level_id": 2,
+      "name": "Gbarma"
+    },
+    {
+      "id": 36,
+      "parent_id": 3,
+      "level_id": 2,
+      "name": "Gounwolaila"
+    },
+    {
+      "id": 37,
+      "parent_id": 3,
+      "level_id": 2,
+      "name": "Kongba"
+    },
+    {
+      "id": 38,
+      "parent_id": 4,
+      "level_id": 2,
+      "name": "Commonwealth"
+    },
+    {
+      "id": 39,
+      "parent_id": 4,
+      "level_id": 2,
+      "name": "District #1"
+    },
+    {
+      "id": 40,
+      "parent_id": 4,
+      "level_id": 2,
+      "name": "District #2"
+    },
+    {
+      "id": 41,
+      "parent_id": 4,
+      "level_id": 2,
+      "name": "District #3"
+    },
+    {
+      "id": 42,
+      "parent_id": 4,
+      "level_id": 2,
+      "name": "District #4"
+    },
+    {
+      "id": 43,
+      "parent_id": 4,
+      "level_id": 2,
+      "name": "Neekreen"
+    },
+    {
+      "id": 44,
+      "parent_id": 4,
+      "level_id": 2,
+      "name": "Owensgrove"
+    },
+    {
+      "id": 45,
+      "parent_id": 4,
+      "level_id": 2,
+      "name": "St. John River City"
+    },
+    {
+      "id": 46,
+      "parent_id": 5,
+      "level_id": 2,
+      "name": "Commonwealth"
+    },
+    {
+      "id": 47,
+      "parent_id": 5,
+      "level_id": 2,
+      "name": "Garwula"
+    },
+    {
+      "id": 48,
+      "parent_id": 5,
+      "level_id": 2,
+      "name": "Golakonneh"
+    },
+    {
+      "id": 49,
+      "parent_id": 5,
+      "level_id": 2,
+      "name": "Porkpa"
+    },
+    {
+      "id": 50,
+      "parent_id": 5,
+      "level_id": 2,
+      "name": "Tewor"
+    },
+    {
+      "id": 51,
+      "parent_id": 6,
+      "level_id": 2,
+      "name": "B'hai"
+    },
+    {
+      "id": 52,
+      "parent_id": 6,
+      "level_id": 2,
+      "name": "Cavala"
+    },
+    {
+      "id": 53,
+      "parent_id": 6,
+      "level_id": 2,
+      "name": "Gbao"
+    },
+    {
+      "id": 54,
+      "parent_id": 6,
+      "level_id": 2,
+      "name": "Gboe-Ploe"
+    },
+    {
+      "id": 55,
+      "parent_id": 6,
+      "level_id": 2,
+      "name": "Glio-Twarbo"
+    },
+    {
+      "id": 56,
+      "parent_id": 6,
+      "level_id": 2,
+      "name": "Konobo"
+    },
+    {
+      "id": 57,
+      "parent_id": 6,
+      "level_id": 2,
+      "name": "Putu"
+    },
+    {
+      "id": 58,
+      "parent_id": 6,
+      "level_id": 2,
+      "name": "Tchien"
+    },
+    {
+      "id": 59,
+      "parent_id": 7,
+      "level_id": 2,
+      "name": "Barclayville"
+    },
+    {
+      "id": 60,
+      "parent_id": 7,
+      "level_id": 2,
+      "name": "Bleebo"
+    },
+    {
+      "id": 61,
+      "parent_id": 7,
+      "level_id": 2,
+      "name": "Bolloh"
+    },
+    {
+      "id": 62,
+      "parent_id": 7,
+      "level_id": 2,
+      "name": "Buah"
+    },
+    {
+      "id": 63,
+      "parent_id": 7,
+      "level_id": 2,
+      "name": "Dorbor"
+    },
+    {
+      "id": 64,
+      "parent_id": 7,
+      "level_id": 2,
+      "name": "Dweh"
+    },
+    {
+      "id": 65,
+      "parent_id": 7,
+      "level_id": 2,
+      "name": "Felo-Jekwi"
+    },
+    {
+      "id": 66,
+      "parent_id": 7,
+      "level_id": 2,
+      "name": "Fenetoe"
+    },
+    {
+      "id": 67,
+      "parent_id": 7,
+      "level_id": 2,
+      "name": "Forpoh"
+    },
+    {
+      "id": 68,
+      "parent_id": 7,
+      "level_id": 2,
+      "name": "Garraway"
+    },
+    {
+      "id": 69,
+      "parent_id": 7,
+      "level_id": 2,
+      "name": "Gee"
+    },
+    {
+      "id": 70,
+      "parent_id": 7,
+      "level_id": 2,
+      "name": "Grand Cess Wedabo"
+    },
+    {
+      "id": 71,
+      "parent_id": 7,
+      "level_id": 2,
+      "name": "Kpi"
+    },
+    {
+      "id": 72,
+      "parent_id": 7,
+      "level_id": 2,
+      "name": "Lower Jloh"
+    },
+    {
+      "id": 73,
+      "parent_id": 7,
+      "level_id": 2,
+      "name": "Nrokwia-Wesldow"
+    },
+    {
+      "id": 74,
+      "parent_id": 7,
+      "level_id": 2,
+      "name": "Trenbo"
+    },
+    {
+      "id": 75,
+      "parent_id": 7,
+      "level_id": 2,
+      "name": "Upper Jloh"
+    },
+    {
+      "id": 76,
+      "parent_id": 7,
+      "level_id": 2,
+      "name": "Wlogba"
+    },
+    {
+      "id": 77,
+      "parent_id": 8,
+      "level_id": 2,
+      "name": "Foya"
+    },
+    {
+      "id": 78,
+      "parent_id": 8,
+      "level_id": 2,
+      "name": "Kolahun"
+    },
+    {
+      "id": 79,
+      "parent_id": 8,
+      "level_id": 2,
+      "name": "Quardu Bondi"
+    },
+    {
+      "id": 80,
+      "parent_id": 8,
+      "level_id": 2,
+      "name": "Salayea"
+    },
+    {
+      "id": 81,
+      "parent_id": 8,
+      "level_id": 2,
+      "name": "Vahun"
+    },
+    {
+      "id": 82,
+      "parent_id": 8,
+      "level_id": 2,
+      "name": "Voinjama"
+    },
+    {
+      "id": 83,
+      "parent_id": 8,
+      "level_id": 2,
+      "name": "Zorzor"
+    },
+    {
+      "id": 84,
+      "parent_id": 9,
+      "level_id": 2,
+      "name": "Firestone"
+    },
+    {
+      "id": 85,
+      "parent_id": 9,
+      "level_id": 2,
+      "name": "Gibi"
+    },
+    {
+      "id": 86,
+      "parent_id": 9,
+      "level_id": 2,
+      "name": "Kakata"
+    },
+    {
+      "id": 87,
+      "parent_id": 9,
+      "level_id": 2,
+      "name": "Mambah Kaba"
+    },
+    {
+      "id": 88,
+      "parent_id": 10,
+      "level_id": 2,
+      "name": "Gwelekpoken"
+    },
+    {
+      "id": 89,
+      "parent_id": 10,
+      "level_id": 2,
+      "name": "Harper"
+    },
+    {
+      "id": 90,
+      "parent_id": 10,
+      "level_id": 2,
+      "name": "Karluway #1"
+    },
+    {
+      "id": 91,
+      "parent_id": 10,
+      "level_id": 2,
+      "name": "Karluway #2"
+    },
+    {
+      "id": 92,
+      "parent_id": 10,
+      "level_id": 2,
+      "name": "Nyorken"
+    },
+    {
+      "id": 93,
+      "parent_id": 10,
+      "level_id": 2,
+      "name": "Pleebo/Sodoken"
+    },
+    {
+      "id": 94,
+      "parent_id": 10,
+      "level_id": 2,
+      "name": "Whojah"
+    },
+    {
+      "id": 95,
+      "parent_id": 11,
+      "level_id": 2,
+      "name": "Careysburg"
+    },
+    {
+      "id": 96,
+      "parent_id": 11,
+      "level_id": 2,
+      "name": "Commonwealth"
+    },
+    {
+      "id": 97,
+      "parent_id": 11,
+      "level_id": 2,
+      "name": "Greater Monrovia"
+    },
+    {
+      "id": 98,
+      "parent_id": 11,
+      "level_id": 2,
+      "name": "St. Paul River"
+    },
+    {
+      "id": 99,
+      "parent_id": 11,
+      "level_id": 2,
+      "name": "Todea"
+    },
+    {
+      "id": 100,
+      "parent_id": 12,
+      "level_id": 2,
+      "name": "Boe & Quilla"
+    },
+    {
+      "id": 101,
+      "parent_id": 12,
+      "level_id": 2,
+      "name": "Buu-Yao"
+    },
+    {
+      "id": 102,
+      "parent_id": 12,
+      "level_id": 2,
+      "name": "Doe"
+    },
+    {
+      "id": 103,
+      "parent_id": 12,
+      "level_id": 2,
+      "name": "Garr-Bain"
+    },
+    {
+      "id": 104,
+      "parent_id": 12,
+      "level_id": 2,
+      "name": "Gbehlay-Geh"
+    },
+    {
+      "id": 105,
+      "parent_id": 12,
+      "level_id": 2,
+      "name": "Gbi & Doru"
+    },
+    {
+      "id": 106,
+      "parent_id": 12,
+      "level_id": 2,
+      "name": "Gbor"
+    },
+    {
+      "id": 107,
+      "parent_id": 12,
+      "level_id": 2,
+      "name": "Kparblee"
+    },
+    {
+      "id": 108,
+      "parent_id": 12,
+      "level_id": 2,
+      "name": "Leewehpea-Mahn"
+    },
+    {
+      "id": 109,
+      "parent_id": 12,
+      "level_id": 2,
+      "name": "Meinpea-Mahn"
+    },
+    {
+      "id": 110,
+      "parent_id": 12,
+      "level_id": 2,
+      "name": "Sanniquellie Mahn"
+    },
+    {
+      "id": 111,
+      "parent_id": 12,
+      "level_id": 2,
+      "name": "Twa River"
+    },
+    {
+      "id": 112,
+      "parent_id": 12,
+      "level_id": 2,
+      "name": "Wee-Gbehy-Mahn"
+    },
+    {
+      "id": 113,
+      "parent_id": 12,
+      "level_id": 2,
+      "name": "Yarmein"
+    },
+    {
+      "id": 114,
+      "parent_id": 12,
+      "level_id": 2,
+      "name": "Yarpea Mahn"
+    },
+    {
+      "id": 115,
+      "parent_id": 12,
+      "level_id": 2,
+      "name": "Yarwein Mehnsonnoh"
+    },
+    {
+      "id": 116,
+      "parent_id": 12,
+      "level_id": 2,
+      "name": "Zoe Gbao"
+    },
+    {
+      "id": 117,
+      "parent_id": 13,
+      "level_id": 2,
+      "name": "Beawor"
+    },
+    {
+      "id": 118,
+      "parent_id": 13,
+      "level_id": 2,
+      "name": "Central Rivercess"
+    },
+    {
+      "id": 119,
+      "parent_id": 13,
+      "level_id": 2,
+      "name": "Doedain"
+    },
+    {
+      "id": 120,
+      "parent_id": 13,
+      "level_id": 2,
+      "name": "Fen River"
+    },
+    {
+      "id": 121,
+      "parent_id": 13,
+      "level_id": 2,
+      "name": "Jo River"
+    },
+    {
+      "id": 122,
+      "parent_id": 13,
+      "level_id": 2,
+      "name": "Norwein"
+    },
+    {
+      "id": 123,
+      "parent_id": 13,
+      "level_id": 2,
+      "name": "Sam Gbalor"
+    },
+    {
+      "id": 124,
+      "parent_id": 13,
+      "level_id": 2,
+      "name": "Zarflahn"
+    },
+    {
+      "id": 125,
+      "parent_id": 14,
+      "level_id": 2,
+      "name": "Chedepo"
+    },
+    {
+      "id": 126,
+      "parent_id": 14,
+      "level_id": 2,
+      "name": "Gbeapo"
+    },
+    {
+      "id": 127,
+      "parent_id": 14,
+      "level_id": 2,
+      "name": "Glaro"
+    },
+    {
+      "id": 128,
+      "parent_id": 14,
+      "level_id": 2,
+      "name": "Karforh"
+    },
+    {
+      "id": 129,
+      "parent_id": 14,
+      "level_id": 2,
+      "name": "Nanee"
+    },
+    {
+      "id": 130,
+      "parent_id": 14,
+      "level_id": 2,
+      "name": "Nyenawliken"
+    },
+    {
+      "id": 131,
+      "parent_id": 14,
+      "level_id": 2,
+      "name": "Nyenebo"
+    },
+    {
+      "id": 132,
+      "parent_id": 14,
+      "level_id": 2,
+      "name": "Potubo"
+    },
+    {
+      "id": 133,
+      "parent_id": 14,
+      "level_id": 2,
+      "name": "Sarbo"
+    },
+    {
+      "id": 134,
+      "parent_id": 14,
+      "level_id": 2,
+      "name": "Tuobo"
+    },
+    {
+      "id": 135,
+      "parent_id": 15,
+      "level_id": 2,
+      "name": "Bodae"
+    },
+    {
+      "id": 136,
+      "parent_id": 15,
+      "level_id": 2,
+      "name": "Bokon"
+    },
+    {
+      "id": 137,
+      "parent_id": 15,
+      "level_id": 2,
+      "name": "Butaw"
+    },
+    {
+      "id": 138,
+      "parent_id": 15,
+      "level_id": 2,
+      "name": "Dugbe River"
+    },
+    {
+      "id": 139,
+      "parent_id": 15,
+      "level_id": 2,
+      "name": "Greenville"
+    },
+    {
+      "id": 140,
+      "parent_id": 15,
+      "level_id": 2,
+      "name": "Jaedae"
+    },
+    {
+      "id": 141,
+      "parent_id": 15,
+      "level_id": 2,
+      "name": "Jeadepo"
+    },
+    {
+      "id": 142,
+      "parent_id": 15,
+      "level_id": 2,
+      "name": "Juarzon"
+    },
+    {
+      "id": 143,
+      "parent_id": 15,
+      "level_id": 2,
+      "name": "Kpayan"
+    },
+    {
+      "id": 144,
+      "parent_id": 15,
+      "level_id": 2,
+      "name": "Kulu Shaw Boe"
+    },
+    {
+      "id": 145,
+      "parent_id": 15,
+      "level_id": 2,
+      "name": "Plahn Nyarn"
+    },
+    {
+      "id": 146,
+      "parent_id": 15,
+      "level_id": 2,
+      "name": "Pynes Town"
+    },
+    {
+      "id": 147,
+      "parent_id": 15,
+      "level_id": 2,
+      "name": "Sanquin Dist#1"
+    },
+    {
+      "id": 148,
+      "parent_id": 15,
+      "level_id": 2,
+      "name": "Sanquin Dist#2"
+    },
+    {
+      "id": 149,
+      "parent_id": 15,
+      "level_id": 2,
+      "name": "Sanquin Dist#3"
+    },
+    {
+      "id": 150,
+      "parent_id": 15,
+      "level_id": 2,
+      "name": "Seekon"
+    },
+    {
+      "id": 151,
+      "parent_id": 15,
+      "level_id": 2,
+      "name": "Wedjah"
+    }
+  ]
+}
