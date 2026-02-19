@@ -1,34 +1,66 @@
-import { useState, useEffect } from 'react'
-import { MapContainer, TileLayer, GeoJSON } from 'react-leaflet'
+import { useState, useEffect, useMemo, useRef, useCallback } from 'react'
+import { MapContainer, TileLayer, GeoJSON, CircleMarker, Popup } from 'react-leaflet'
 import { feature } from 'topojson-client'
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts'
-import { Droplets, Map, BarChart3, Filter } from 'lucide-react'
+import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer } from 'recharts'
+import { Droplets, Filter, AlertCircle, RefreshCw, MapPin, Map, ArrowDownCircle } from 'lucide-react'
+import { useWaterFacilities } from './hooks'
+import { aggregateByGeography } from './api'
 import './App.css'
 
-const COLORS = ['#2563eb', '#22c55e', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#06b6d4', '#84cc16']
-
 function App() {
-  const [loading, setLoading] = useState(true)
+  const [initialLoading, setInitialLoading] = useState(true)
   const [administration, setAdministration] = useState(null)
   const [boundaries, setBoundaries] = useState(null)
-  const [indicators, setIndicators] = useState(null)
   const [selectedCounty, setSelectedCounty] = useState('')
   const [selectedDistrict, setSelectedDistrict] = useState('')
+  const [showScrollHint, setShowScrollHint] = useState(true)
+  const sidebarRef = useRef(null)
 
+  // Handle sidebar scroll to show/hide scroll hint
+  const handleSidebarScroll = useCallback(() => {
+    if (sidebarRef.current) {
+      const { scrollTop } = sidebarRef.current
+      setShowScrollHint(scrollTop < 50)
+    }
+  }, [])
+
+  // Get county names for API fetching
+  const countyNames = useMemo(() => {
+    if (!administration) return []
+    return administration.data
+      .filter(d => d.level_id === 1)
+      .map(c => c.name)
+  }, [administration])
+
+  // Use real API data
+  const {
+    filteredData,
+    stats,
+    loading: apiLoading,
+    error: apiError,
+    progress,
+    filters,
+    updateFilter,
+    clearFilters,
+    refresh,
+  } = useWaterFacilities({
+    counties: countyNames,
+    autoFetch: countyNames.length > 0,
+  })
+
+  // Load static data (boundaries, administration)
   useEffect(() => {
     Promise.all([
       fetch('./data/liberia-administration.json').then(r => r.json()),
       fetch('./data/liberia-district-boundary.json').then(r => r.json()),
-      fetch('./data/liberia-indicators.json').then(r => r.json()),
-    ]).then(([admin, topo, ind]) => {
+    ]).then(([admin, topo]) => {
       setAdministration(admin)
       const geojson = feature(topo, topo.objects['liberia-district-boundary'])
       setBoundaries(geojson)
-      setIndicators(ind)
-      setLoading(false)
+      setInitialLoading(false)
     }).catch(err => {
       console.error('Error loading data:', err)
-      setLoading(false)
+      setInitialLoading(false)
     })
   }, [])
 
@@ -37,19 +69,94 @@ function App() {
     d.level_id === 2 && (!selectedCounty || d.parent_id === parseInt(selectedCounty))
   ) || []
 
-  // Sample aggregated data for charts (placeholder - would come from actual data)
-  const waterPointTypes = [
-    { name: 'Borehole', value: 4520 },
-    { name: 'Protected Well', value: 2340 },
-    { name: 'Public Tap', value: 1890 },
-    { name: 'Spring', value: 980 },
-    { name: 'Other', value: 670 },
-  ]
+  // Sort with Unknown/Other at end
+  const sortWithUnknownLast = (data) => {
+    const special = ['unknown', 'other', 'n/a', 'none', '']
+    return data.sort((a, b) => {
+      const aIsSpecial = special.includes(a.name.toLowerCase())
+      const bIsSpecial = special.includes(b.name.toLowerCase())
+      if (aIsSpecial && !bIsSpecial) return 1
+      if (!aIsSpecial && bIsSpecial) return -1
+      return b.value - a.value
+    })
+  }
 
-  const countyStats = counties.slice(0, 8).map((c, i) => ({
-    name: c.name.length > 10 ? c.name.slice(0, 10) + '...' : c.name,
-    waterPoints: Math.floor(Math.random() * 1000) + 200,
-  }))
+  // Aggregate data for charts
+  const waterSourceData = useMemo(() => {
+    if (!stats?.byWaterSource) return []
+    return sortWithUnknownLast([...stats.byWaterSource]).slice(0, 8)
+  }, [stats])
+
+  const technologyData = useMemo(() => {
+    if (!stats?.byTechnology) return []
+    return sortWithUnknownLast([...stats.byTechnology]).slice(0, 8)
+  }, [stats])
+
+  const ownerData = useMemo(() => {
+    if (!filteredData || filteredData.length === 0) return []
+    const counts = {}
+    filteredData.forEach(f => {
+      const owner = f.owner || 'Unknown'
+      counts[owner] = (counts[owner] || 0) + 1
+    })
+    const data = Object.entries(counts).map(([name, value]) => ({ name, value }))
+    return sortWithUnknownLast(data).slice(0, 8)
+  }, [filteredData])
+
+  const extractionData = useMemo(() => {
+    if (!filteredData || filteredData.length === 0) return []
+    const counts = {}
+    filteredData.forEach(f => {
+      const type = f.extractionType || 'Unknown'
+      counts[type] = (counts[type] || 0) + 1
+    })
+    const data = Object.entries(counts).map(([name, value]) => ({ name, value }))
+    return sortWithUnknownLast(data).slice(0, 8)
+  }, [filteredData])
+
+  const districtData = useMemo(() => {
+    if (!filteredData || filteredData.length === 0) return []
+    const counts = {}
+    filteredData.forEach(f => {
+      const district = f.districtName || 'Unknown'
+      counts[district] = (counts[district] || 0) + 1
+    })
+    const data = Object.entries(counts).map(([name, value]) => ({ name, value }))
+    return sortWithUnknownLast(data).slice(0, 10)
+  }, [filteredData])
+
+
+  // Water points with coordinates for map markers
+  const mapMarkers = useMemo(() => {
+    if (!filteredData) return []
+    return filteredData
+      .filter(f => f.latitude && f.longitude && !isNaN(f.latitude) && !isNaN(f.longitude))
+      .slice(0, 1000) // Limit markers for performance
+  }, [filteredData])
+
+  // Handle filter changes
+  const handleCountyChange = (e) => {
+    const countyId = e.target.value
+    setSelectedCounty(countyId)
+    setSelectedDistrict('')
+
+    const countyName = counties.find(c => c.id === parseInt(countyId))?.name || ''
+    updateFilter('countyName', countyName)
+  }
+
+  const handleDistrictChange = (e) => {
+    const districtId = e.target.value
+    setSelectedDistrict(districtId)
+
+    const districtName = districts.find(d => d.id === parseInt(districtId))?.name || ''
+    updateFilter('districtName', districtName)
+  }
+
+  const handleClearFilters = () => {
+    setSelectedCounty('')
+    setSelectedDistrict('')
+    clearFilters()
+  }
 
   const getDistrictStyle = (feature) => {
     const isSelected = selectedDistrict &&
@@ -57,30 +164,55 @@ function App() {
     const isCountySelected = selectedCounty &&
       feature.properties.county === counties.find(c => c.id === parseInt(selectedCounty))?.name
 
+    // Color by water point count if we have data
+    let fillColor = '#cbd5e1'
+    if (filteredData && filteredData.length > 0 && !isSelected && !isCountySelected) {
+      const geo = aggregateByGeography(filteredData)
+      const countyData = geo[feature.properties.county]
+      if (countyData) {
+        const districtCount = countyData.districts[feature.properties.district] || 0
+        const maxCount = Math.max(...Object.values(countyData.districts))
+        const intensity = maxCount > 0 ? districtCount / maxCount : 0
+        fillColor = `rgba(37, 99, 235, ${0.2 + intensity * 0.6})`
+      }
+    }
+
     return {
-      fillColor: isSelected ? '#2563eb' : isCountySelected ? '#93c5fd' : '#cbd5e1',
+      fillColor: isSelected ? '#2563eb' : isCountySelected ? '#93c5fd' : fillColor,
       weight: isSelected ? 2 : 1,
       opacity: 1,
       color: isSelected ? '#1d4ed8' : '#64748b',
-      fillOpacity: isSelected ? 0.7 : isCountySelected ? 0.5 : 0.3,
+      fillOpacity: isSelected ? 0.7 : isCountySelected ? 0.5 : 0.5,
     }
   }
 
   const onEachDistrict = (feature, layer) => {
-    layer.bindTooltip(`${feature.properties.district}, ${feature.properties.county}`)
+    const geo = filteredData ? aggregateByGeography(filteredData) : {}
+    const countyData = geo[feature.properties.county]
+    const districtCount = countyData?.districts[feature.properties.district] || 0
+
+    layer.bindTooltip(
+      `${feature.properties.district}, ${feature.properties.county}<br/>Water Points: ${districtCount}`
+    )
     layer.on({
       click: () => {
         const county = counties.find(c => c.name === feature.properties.county)
         const district = administration.data.find(
           d => d.level_id === 2 && d.name === feature.properties.district && d.parent_id === county?.id
         )
-        if (county) setSelectedCounty(String(county.id))
-        if (district) setSelectedDistrict(String(district.id))
+        if (county) {
+          setSelectedCounty(String(county.id))
+          updateFilter('countyName', county.name)
+        }
+        if (district) {
+          setSelectedDistrict(String(district.id))
+          updateFilter('districtName', district.name)
+        }
       }
     })
   }
 
-  if (loading) {
+  if (initialLoading) {
     return (
       <div className="loading">
         <Droplets size={48} className="loading-icon" />
@@ -93,10 +225,9 @@ function App() {
     <div className="dashboard">
       <header className="header">
         <div className="header-title">
-          <Droplets size={28} />
+          <Droplets size={24} />
           <h1>Liberia Water Point Dashboard</h1>
         </div>
-        <p className="header-subtitle">Water Point Mapping Data Visualization</p>
       </header>
 
       <div className="filters">
@@ -106,7 +237,7 @@ function App() {
         </div>
         <select
           value={selectedCounty}
-          onChange={(e) => { setSelectedCounty(e.target.value); setSelectedDistrict(''); }}
+          onChange={handleCountyChange}
         >
           <option value="">All Counties</option>
           {counties.map(c => (
@@ -115,7 +246,7 @@ function App() {
         </select>
         <select
           value={selectedDistrict}
-          onChange={(e) => setSelectedDistrict(e.target.value)}
+          onChange={handleDistrictChange}
           disabled={!selectedCounty}
         >
           <option value="">All Districts</option>
@@ -124,39 +255,58 @@ function App() {
           ))}
         </select>
         {(selectedCounty || selectedDistrict) && (
-          <button className="clear-btn" onClick={() => { setSelectedCounty(''); setSelectedDistrict(''); }}>
+          <button className="clear-btn" onClick={handleClearFilters}>
             Clear
           </button>
         )}
+        <button
+          className="refresh-btn"
+          onClick={refresh}
+          disabled={apiLoading}
+          title="Refresh data"
+        >
+          <RefreshCw size={16} className={apiLoading ? 'spinning' : ''} />
+        </button>
+
+        <div className="stats-inline">
+          <div className="stat-badge">
+            <Droplets size={14} />
+            <span className="num">{stats?.totalFacilities?.toLocaleString() || '—'}</span>
+            <span className="label">points</span>
+          </div>
+          <div className="stat-badge">
+            <MapPin size={14} />
+            <span className="num">{stats?.withCoordinates?.toLocaleString() || '—'}</span>
+            <span className="label">mapped</span>
+          </div>
+          <div className="stat-badge">
+            <Map size={14} />
+            <span className="num">{counties.length}</span>
+            <span className="label">counties</span>
+          </div>
+        </div>
       </div>
 
-      <div className="stats-row">
-        <div className="stat-card">
-          <div className="stat-icon blue"><Droplets size={24} /></div>
-          <div className="stat-content">
-            <span className="stat-value">10,400</span>
-            <span className="stat-label">Total Water Points</span>
-          </div>
+      {/* API Loading/Error State */}
+      {apiLoading && (
+        <div className="api-status loading">
+          <Droplets size={18} className="loading-icon" />
+          <span>
+            Loading data... {progress.county && `(${progress.county} - ${progress.index + 1}/${progress.total})`}
+          </span>
         </div>
-        <div className="stat-card">
-          <div className="stat-icon green"><Map size={24} /></div>
-          <div className="stat-content">
-            <span className="stat-value">{counties.length}</span>
-            <span className="stat-label">Counties</span>
-          </div>
+      )}
+
+      {apiError && (
+        <div className="api-status error">
+          <AlertCircle size={18} />
+          <span>Error loading data: {apiError}</span>
+          <button onClick={refresh}>Retry</button>
         </div>
-        <div className="stat-card">
-          <div className="stat-icon orange"><BarChart3 size={24} /></div>
-          <div className="stat-content">
-            <span className="stat-value">{districts.length}</span>
-            <span className="stat-label">Districts</span>
-          </div>
-        </div>
-      </div>
+      )}
 
       <div className="main-content">
         <div className="map-container">
-          <h2><Map size={20} /> Map View</h2>
           <MapContainer
             center={[6.5, -9.5]}
             zoom={7}
@@ -171,55 +321,134 @@ function App() {
                 data={boundaries}
                 style={getDistrictStyle}
                 onEachFeature={onEachDistrict}
-                key={`${selectedCounty}-${selectedDistrict}`}
+                key={`${selectedCounty}-${selectedDistrict}-${filteredData?.length || 0}`}
               />
             )}
+            {mapMarkers.map((facility, idx) => (
+              <CircleMarker
+                key={facility.osid || idx}
+                center={[parseFloat(facility.latitude), parseFloat(facility.longitude)]}
+                radius={4}
+                fillColor="#2563eb"
+                color="#1d4ed8"
+                weight={1}
+                opacity={0.8}
+                fillOpacity={0.6}
+              >
+                <Popup>
+                  <strong>{facility.communityName || 'Unknown'}</strong><br />
+                  {facility.districtName}, {facility.countyName}<br />
+                  Type: {facility.waterSource || 'N/A'}<br />
+                  Technology: {facility.technologyType || 'N/A'}
+                </Popup>
+              </CircleMarker>
+            ))}
           </MapContainer>
         </div>
 
-        <div className="charts-container">
+        <div className="sidebar" ref={sidebarRef} onScroll={handleSidebarScroll}>
           <div className="chart-card">
-            <h3>Water Point Types</h3>
-            <ResponsiveContainer width="100%" height={200}>
-              <PieChart>
-                <Pie
-                  data={waterPointTypes}
-                  cx="50%"
-                  cy="50%"
-                  innerRadius={40}
-                  outerRadius={80}
-                  paddingAngle={2}
-                  dataKey="value"
-                  label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                  labelLine={false}
-                >
-                  {waterPointTypes.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                  ))}
-                </Pie>
-                <Tooltip />
-              </PieChart>
-            </ResponsiveContainer>
+            <h3>Water Source Types</h3>
+            {waterSourceData.length > 0 ? (
+              <ResponsiveContainer width="100%" height={waterSourceData.length * 28 + 30}>
+                <BarChart data={waterSourceData} layout="vertical" margin={{ left: 35, right: 5 }}>
+                  <XAxis type="number" hide />
+                  <YAxis yAxisId="left" dataKey="value" type="category" orientation="left" width={30}
+                    tick={{ fontSize: 10 }} axisLine={false} tickLine={false} />
+                  <YAxis yAxisId="right" dataKey="name" type="category" orientation="right" width={140}
+                    tick={{ fontSize: 10 }} tickFormatter={(v) => v.length > 22 ? v.slice(0, 22) + '..' : v}
+                    axisLine={false} tickLine={false} />
+                                    <Bar yAxisId="right" dataKey="value" fill="#6b9ac4" radius={[3, 3, 3, 3]} barSize={18} />
+                </BarChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="chart-placeholder">{apiLoading ? 'Loading...' : 'No data'}</div>
+            )}
           </div>
 
           <div className="chart-card">
-            <h3>Water Points by County</h3>
-            <ResponsiveContainer width="100%" height={200}>
-              <BarChart data={countyStats} layout="vertical">
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis type="number" />
-                <YAxis dataKey="name" type="category" width={80} tick={{ fontSize: 11 }} />
-                <Tooltip />
-                <Bar dataKey="waterPoints" fill="#2563eb" radius={[0, 4, 4, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
+            <h3>Technology Type</h3>
+            {technologyData.length > 0 ? (
+              <ResponsiveContainer width="100%" height={technologyData.length * 28 + 30}>
+                <BarChart data={technologyData} layout="vertical" margin={{ left: 35, right: 5 }}>
+                  <XAxis type="number" hide />
+                  <YAxis yAxisId="left" dataKey="value" type="category" orientation="left" width={30}
+                    tick={{ fontSize: 10 }} axisLine={false} tickLine={false} />
+                  <YAxis yAxisId="right" dataKey="name" type="category" orientation="right" width={140}
+                    tick={{ fontSize: 10 }} tickFormatter={(v) => v.length > 22 ? v.slice(0, 22) + '..' : v}
+                    axisLine={false} tickLine={false} />
+                                    <Bar yAxisId="right" dataKey="value" fill="#7eb5a6" radius={[3, 3, 3, 3]} barSize={18} />
+                </BarChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="chart-placeholder">{apiLoading ? 'Loading...' : 'No data'}</div>
+            )}
           </div>
+
+          <div className="chart-card">
+            <h3>Extraction Type</h3>
+            {extractionData.length > 0 ? (
+              <ResponsiveContainer width="100%" height={extractionData.length * 28 + 30}>
+                <BarChart data={extractionData} layout="vertical" margin={{ left: 35, right: 5 }}>
+                  <XAxis type="number" hide />
+                  <YAxis yAxisId="left" dataKey="value" type="category" orientation="left" width={30}
+                    tick={{ fontSize: 10 }} axisLine={false} tickLine={false} />
+                  <YAxis yAxisId="right" dataKey="name" type="category" orientation="right" width={140}
+                    tick={{ fontSize: 10 }} tickFormatter={(v) => v.length > 22 ? v.slice(0, 22) + '..' : v}
+                    axisLine={false} tickLine={false} />
+                                    <Bar yAxisId="right" dataKey="value" fill="#c4a76b" radius={[3, 3, 3, 3]} barSize={18} />
+                </BarChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="chart-placeholder">{apiLoading ? 'Loading...' : 'No data'}</div>
+            )}
+          </div>
+
+          <div className="chart-card">
+            <h3>Ownership</h3>
+            {ownerData.length > 0 ? (
+              <ResponsiveContainer width="100%" height={ownerData.length * 28 + 30}>
+                <BarChart data={ownerData} layout="vertical" margin={{ left: 35, right: 5 }}>
+                  <XAxis type="number" hide />
+                  <YAxis yAxisId="left" dataKey="value" type="category" orientation="left" width={30}
+                    tick={{ fontSize: 10 }} axisLine={false} tickLine={false} />
+                  <YAxis yAxisId="right" dataKey="name" type="category" orientation="right" width={140}
+                    tick={{ fontSize: 10 }} tickFormatter={(v) => v.length > 22 ? v.slice(0, 22) + '..' : v}
+                    axisLine={false} tickLine={false} />
+                                    <Bar yAxisId="right" dataKey="value" fill="#a67eb5" radius={[3, 3, 3, 3]} barSize={18} />
+                </BarChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="chart-placeholder">{apiLoading ? 'Loading...' : 'No data'}</div>
+            )}
+          </div>
+
+          <div className="chart-card">
+            <h3>Top Districts</h3>
+            {districtData.length > 0 ? (
+              <ResponsiveContainer width="100%" height={districtData.length * 28 + 30}>
+                <BarChart data={districtData} layout="vertical" margin={{ left: 35, right: 5 }}>
+                  <XAxis type="number" hide />
+                  <YAxis yAxisId="left" dataKey="value" type="category" orientation="left" width={30}
+                    tick={{ fontSize: 10 }} axisLine={false} tickLine={false} />
+                  <YAxis yAxisId="right" dataKey="name" type="category" orientation="right" width={140}
+                    tick={{ fontSize: 10 }} tickFormatter={(v) => v.length > 22 ? v.slice(0, 22) + '..' : v}
+                    axisLine={false} tickLine={false} />
+                                    <Bar yAxisId="right" dataKey="value" fill="#b5867e" radius={[3, 3, 3, 3]} barSize={18} />
+                </BarChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="chart-placeholder">{apiLoading ? 'Loading...' : 'No data'}</div>
+            )}
+          </div>
+
+          {showScrollHint && (
+            <div className="scroll-hint">
+              <ArrowDownCircle size={32} />
+            </div>
+          )}
         </div>
       </div>
-
-      <footer className="footer">
-        <p>Liberia Water Point Mapping Project &copy; 2024</p>
-      </footer>
     </div>
   )
 }

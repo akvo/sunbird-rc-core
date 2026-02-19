@@ -111,3 +111,6 @@ water_facilities_export.csv
 *.org
 *.png
 !frontend/**/*.png
+
+# Vite cache
+.vite/
