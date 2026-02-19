@@ -1,5 +1,16 @@
-# Custom nginx image with frontend static files baked in
+# Build stage for dashboard
+FROM node:20-alpine AS dashboard-builder
+WORKDIR /app
+COPY dashboard/package*.json ./
+RUN npm ci
+COPY dashboard/ ./
+RUN npm run build
+
+# Final nginx image with static files baked in
 FROM ghcr.io/sunbird-rc/sunbird-rc-nginx
 
 # Copy QR scanner and facility browser frontend
 COPY frontend/ /usr/share/nginx/frontend/
+
+# Copy dashboard build output
+COPY --from=dashboard-builder /app/dist/ /usr/share/nginx/dashboard/

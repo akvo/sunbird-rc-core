@@ -26,6 +26,13 @@ data:
             try_files $uri $uri/ /index.html;
         }
 
+        # Water Point Dashboard
+        location /dashboard {
+            alias /usr/share/nginx/dashboard/;
+            index index.html;
+            try_files $uri $uri/ /dashboard/index.html;
+        }
+
         # Registry API
         location /registry/ {
             proxy_pass http://registry:8081/;
