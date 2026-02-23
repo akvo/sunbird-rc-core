@@ -1,12 +1,35 @@
 import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react'
-import { MapContainer, TileLayer, GeoJSON, CircleMarker, Popup } from 'react-leaflet'
+import { MapContainer, TileLayer, GeoJSON, CircleMarker, Popup, useMapEvents } from 'react-leaflet'
+import * as turf from '@turf/turf'
 import { feature } from 'topojson-client'
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Cell } from 'recharts'
-import { Droplets, Filter, AlertCircle, RefreshCw, MapPin, Map, ArrowDownCircle, Grid3X3, Circle } from 'lucide-react'
+import { Droplets, Filter, AlertCircle, RefreshCw, ArrowDownCircle, Grid3X3, Circle } from 'lucide-react'
 import { useWaterFacilities } from './hooks'
 import { aggregateByGeography } from './api'
 import { generateDotMatrixForRegions } from './dotMatrix'
 import './App.css'
+
+// Component to handle map clicks outside country boundaries
+function MapClickHandler({ boundaries, onClickOutside }) {
+  useMapEvents({
+    click: (e) => {
+      if (!boundaries) return
+      const point = turf.point([e.latlng.lng, e.latlng.lat])
+      // Check if click is inside any polygon
+      const isInsideCountry = boundaries.features.some(feature => {
+        try {
+          return turf.booleanPointInPolygon(point, feature)
+        } catch {
+          return false
+        }
+      })
+      if (!isInsideCountry) {
+        onClickOutside()
+      }
+    }
+  })
+  return null
+}
 
 function App() {
   const [initialLoading, setInitialLoading] = useState(true)
@@ -17,7 +40,7 @@ function App() {
   const [showScrollHint, setShowScrollHint] = useState(true)
   const [colorMap, setColorMap] = useState({})
   const [mapMode, setMapMode] = useState('markers') // 'markers' or 'dotMatrix'
-  const [dotMatrixIndicator, setDotMatrixIndicator] = useState('waterSource')
+  const [mapIndicator, setMapIndicator] = useState('waterSource')
   const sidebarRef = useRef(null)
 
   // Handle sidebar scroll to show/hide scroll hint
@@ -38,6 +61,7 @@ function App() {
 
   // Use real API data
   const {
+    data,
     filteredData,
     stats,
     loading: apiLoading,
@@ -150,8 +174,8 @@ function App() {
     return sortWithUnknownLast(data).slice(0, 10)
   }, [filteredData])
 
-  // Dot matrix indicator options
-  const dotMatrixIndicators = [
+  // Indicator options for map visualization
+  const indicators = [
     { key: 'waterSource', label: 'Water Source Type' },
     { key: 'extractionType', label: 'Extraction Type' },
     { key: 'owner', label: 'Ownership' },
@@ -166,18 +190,22 @@ function App() {
     return generateDotMatrixForRegions(
       boundaries,
       filteredData,
-      dotMatrixIndicator,
+      mapIndicator,
       (name) => getColor(name, '#9CA3AF'),
       0.012
     )
-  }, [mapMode, boundaries, filteredData, dotMatrixIndicator, colorMap])
+  }, [mapMode, boundaries, filteredData, mapIndicator, colorMap])
 
-  // Get unique categories for legend
-  const dotMatrixLegend = useMemo(() => {
-    if (mapMode !== 'dotMatrix' || !filteredData || filteredData.length === 0) return []
+  // Get unique categories for map legend
+  const mapLegend = useMemo(() => {
+    if (!filteredData || filteredData.length === 0) return []
     const counts = {}
     filteredData.forEach(f => {
-      const value = f[dotMatrixIndicator] || 'Unknown'
+      // For markers mode, only count items with valid coordinates
+      if (mapMode === 'markers') {
+        if (!f.latitude || !f.longitude || isNaN(f.latitude) || isNaN(f.longitude)) return
+      }
+      const value = f[mapIndicator] || 'Unknown'
       counts[value] = (counts[value] || 0) + 1
     })
     return sortWithUnknownLast(
@@ -187,7 +215,7 @@ function App() {
         color: getColor(name, '#9CA3AF')
       }))
     )
-  }, [mapMode, filteredData, dotMatrixIndicator, colorMap])
+  }, [mapMode, filteredData, mapIndicator, colorMap])
 
   // Water points with coordinates for map markers
   const mapMarkers = useMemo(() => {
@@ -261,7 +289,8 @@ function App() {
   }
 
   const onEachDistrict = (feature, layer) => {
-    const geo = filteredData ? aggregateByGeography(filteredData) : {}
+    // Use unfiltered data for tooltip counts so all districts show their total
+    const geo = data ? aggregateByGeography(data) : {}
     const countyData = geo[feature.properties.county]
     const districtCount = countyData?.districts[feature.properties.district] || 0
 
@@ -359,35 +388,15 @@ function App() {
             <Grid3X3 size={14} />
             <span>Dot Matrix</span>
           </button>
-          {mapMode === 'dotMatrix' && (
-            <select
-              value={dotMatrixIndicator}
-              onChange={(e) => setDotMatrixIndicator(e.target.value)}
-              className="dot-matrix-select"
-            >
-              {dotMatrixIndicators.map(ind => (
-                <option key={ind.key} value={ind.key}>{ind.label}</option>
-              ))}
-            </select>
-          )}
-        </div>
-
-        <div className="stats-inline">
-          <div className="stat-badge">
-            <Droplets size={14} />
-            <span className="num">{stats?.totalFacilities?.toLocaleString() || '—'}</span>
-            <span className="label">points</span>
-          </div>
-          <div className="stat-badge">
-            <MapPin size={14} />
-            <span className="num">{stats?.withCoordinates?.toLocaleString() || '—'}</span>
-            <span className="label">mapped</span>
-          </div>
-          <div className="stat-badge">
-            <Map size={14} />
-            <span className="num">{counties.length}</span>
-            <span className="label">counties</span>
-          </div>
+          <select
+            value={mapIndicator}
+            onChange={(e) => setMapIndicator(e.target.value)}
+            className="indicator-select"
+          >
+            {indicators.map(ind => (
+              <option key={ind.key} value={ind.key}>{ind.label}</option>
+            ))}
+          </select>
         </div>
       </div>
 
@@ -420,6 +429,7 @@ function App() {
               attribution='&copy; <a href="https://carto.com/">CARTO</a>'
               url="https://{s}.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}{r}.png"
             />
+            <MapClickHandler boundaries={boundaries} onClickOutside={handleClearFilters} />
             {boundaries && (
               <GeoJSON
                 data={boundaries}
@@ -428,27 +438,34 @@ function App() {
                 key={`${selectedCounty}-${selectedDistrict}-${filteredData?.length || 0}-${mapMode}`}
               />
             )}
-            {mapMode === 'markers' && mapMarkers.map((facility, idx) => (
-              <CircleMarker
-                key={facility.osid || idx}
-                center={[parseFloat(facility.latitude), parseFloat(facility.longitude)]}
-                radius={2}
-                fillColor="#2563eb"
-                color="#1d4ed8"
-                weight={1}
-                opacity={0.8}
-                fillOpacity={0.6}
-              >
-                <Popup>
-                  <strong>{facility.communityName || 'Unknown'}</strong><br />
-                  {facility.districtName}, {facility.countyName}<br />
-                  Type: {facility.waterSource || 'N/A'}<br />
-                  Technology: {facility.technologyType || 'N/A'}
-                </Popup>
-              </CircleMarker>
-            ))}
+            {mapMode === 'markers' && (
+              <React.Fragment key={`markers-${mapIndicator}`}>
+                {mapMarkers.map((facility, idx) => {
+                  const markerColor = getColor(facility[mapIndicator] || 'Unknown', '#9CA3AF')
+                  return (
+                    <CircleMarker
+                      key={facility.osid || idx}
+                      center={[parseFloat(facility.latitude), parseFloat(facility.longitude)]}
+                      radius={2}
+                      fillColor={markerColor}
+                      color={markerColor}
+                      weight={1}
+                      opacity={0.8}
+                      fillOpacity={0.6}
+                    >
+                      <Popup>
+                        <strong>{facility.communityName || 'Unknown'}</strong><br />
+                        {facility.districtName}, {facility.countyName}<br />
+                        Type: {facility.waterSource || 'N/A'}<br />
+                        Technology: {facility.technologyType || 'N/A'}
+                      </Popup>
+                    </CircleMarker>
+                  )
+                })}
+              </React.Fragment>
+            )}
             {mapMode === 'dotMatrix' && (
-              <React.Fragment key={`dots-${dotMatrixIndicator}`}>
+              <React.Fragment key={`dots-${mapIndicator}`}>
                 {dotMatrixData.map((dot, idx) => (
                   <CircleMarker
                     key={idx}
@@ -472,16 +489,16 @@ function App() {
                   color: '#475569',
                   fillOpacity: 0,
                 })}
-                key={`boundaries-overlay-${selectedCounty}-${selectedDistrict}-${dotMatrixIndicator}`}
+                key={`boundaries-overlay-${selectedCounty}-${selectedDistrict}-${mapIndicator}`}
               />
             )}
           </MapContainer>
-          {mapMode === 'dotMatrix' && dotMatrixLegend.length > 0 && (
+          {mapLegend.length > 0 && (
             <div className="map-legend">
               <div className="legend-title">
-                {dotMatrixIndicators.find(i => i.key === dotMatrixIndicator)?.label}
+                {indicators.find(i => i.key === mapIndicator)?.label}
               </div>
-              {dotMatrixLegend.slice(0, 8).map((item) => (
+              {mapLegend.slice(0, 8).map((item) => (
                 <div key={item.name} className="legend-item">
                   <span className="legend-dot" style={{ backgroundColor: item.color }} />
                   <span className="legend-label">{item.name}</span>

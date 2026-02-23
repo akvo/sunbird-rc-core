@@ -57,8 +57,9 @@ export function useWaterFacilities({ counties = [], autoFetch = true } = {}) {
 
     try {
       // Check cache first (unless force refresh)
+      // Pass counties to validate cache matches current county list
       if (!forceRefresh) {
-        const cachedData = await getCachedData();
+        const cachedData = await getCachedData(counties);
         if (cachedData && cachedData.length > 0) {
           setData(cachedData);
           setFilteredData(cachedData);
@@ -82,8 +83,9 @@ export function useWaterFacilities({ counties = [], autoFetch = true } = {}) {
       );
 
       // Save only essential fields to cache (reduces storage size)
+      // Include counties list for cache validation on next load
       const essentialData = allData.map(extractEssentialFields);
-      await setCachedData(essentialData);
+      await setCachedData(essentialData, counties);
 
       // Use essential data for consistency with cache
       setData(essentialData);
