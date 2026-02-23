@@ -1,4 +1,20 @@
 {
+  "colors": [
+    { "color": "#9CA3AF", "options": ["Other", "Unknown"] },
+    { "color": "#3B82F6", "options": ["Tube well or borehole", "Government", "Afridev", "NGO"] },
+    { "color": "#14B8A6", "options": ["Protected dug well", "CBO", "Kardia"] },
+    { "color": "#F97316", "options": ["Unprotected dug well", "Manual"] },
+    { "color": "#22C55E", "options": ["Protected spring", "Community", "India Mark"] },
+    { "color": "#EF4444", "options": ["Unprotected spring", "Health Facility"] },
+    { "color": "#06B6D4", "options": ["Public tap/standpipe"] },
+    { "color": "#6366F1", "options": ["Piped water into dwelling/plot/yard", "Consallen", "Other institution"] },
+    { "color": "#0EA5E9", "options": ["Rainwater (harvesting)"] },
+    { "color": "#A16207", "options": ["Sand/Sub-surface dam (with well or standpipe)", "Rope pump"] },
+    { "color": "#FBBF24", "options": ["Unequipped borehole"] },
+    { "color": "#EAB308", "options": ["Electrical", "School"] },
+    { "color": "#F59E0B", "options": ["Solar"] },
+    { "color": "#8B5CF6", "options": ["Vergnet", "Private Individual", "Private"] }
+  ],
   "categories": [
     {
       "id": "location",

@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo, useRef, useCallback } from 'react'
 import { MapContainer, TileLayer, GeoJSON, CircleMarker, Popup } from 'react-leaflet'
 import { feature } from 'topojson-client'
-import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer } from 'recharts'
+import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Cell } from 'recharts'
 import { Droplets, Filter, AlertCircle, RefreshCw, MapPin, Map, ArrowDownCircle } from 'lucide-react'
 import { useWaterFacilities } from './hooks'
 import { aggregateByGeography } from './api'
@@ -14,6 +14,7 @@ function App() {
   const [selectedCounty, setSelectedCounty] = useState('')
   const [selectedDistrict, setSelectedDistrict] = useState('')
   const [showScrollHint, setShowScrollHint] = useState(true)
+  const [colorMap, setColorMap] = useState({})
   const sidebarRef = useRef(null)
 
   // Handle sidebar scroll to show/hide scroll hint
@@ -48,15 +49,24 @@ function App() {
     autoFetch: countyNames.length > 0,
   })
 
-  // Load static data (boundaries, administration)
+  // Load static data (boundaries, administration, indicators)
   useEffect(() => {
     Promise.all([
       fetch('./data/liberia-administration.json').then(r => r.json()),
       fetch('./data/liberia-district-boundary.json').then(r => r.json()),
-    ]).then(([admin, topo]) => {
+      fetch('./data/liberia-indicators.json').then(r => r.json()),
+    ]).then(([admin, topo, indicators]) => {
       setAdministration(admin)
       const geojson = feature(topo, topo.objects['liberia-district-boundary'])
       setBoundaries(geojson)
+      // Build color lookup map from indicators
+      const colors = {}
+      indicators.colors?.forEach(({ color, options }) => {
+        options.forEach(opt => {
+          colors[opt.toLowerCase()] = color
+        })
+      })
+      setColorMap(colors)
       setInitialLoading(false)
     }).catch(err => {
       console.error('Error loading data:', err)
@@ -64,19 +74,31 @@ function App() {
     })
   }, [])
 
+  // Helper to get color for an option name
+  const getColor = (name, fallback = '#6b9ac4') => {
+    if (!name) return fallback
+    return colorMap[name.toLowerCase()] || fallback
+  }
+
   const counties = administration?.data.filter(d => d.level_id === 1) || []
   const districts = administration?.data.filter(d =>
     d.level_id === 2 && (!selectedCounty || d.parent_id === parseInt(selectedCounty))
   ) || []
 
-  // Sort with Unknown/Other at end
+  // Sort with Other/Unknown at end (Other before Unknown)
   const sortWithUnknownLast = (data) => {
-    const special = ['unknown', 'other', 'n/a', 'none', '']
+    const special = ['other', 'unknown', 'n/a', 'none', '']
     return data.sort((a, b) => {
-      const aIsSpecial = special.includes(a.name.toLowerCase())
-      const bIsSpecial = special.includes(b.name.toLowerCase())
+      const aLower = a.name.toLowerCase()
+      const bLower = b.name.toLowerCase()
+      const aIsSpecial = special.includes(aLower)
+      const bIsSpecial = special.includes(bLower)
       if (aIsSpecial && !bIsSpecial) return 1
       if (!aIsSpecial && bIsSpecial) return -1
+      if (aIsSpecial && bIsSpecial) {
+        // Both special: sort by position in special array (Other before Unknown)
+        return special.indexOf(aLower) - special.indexOf(bLower)
+      }
       return b.value - a.value
     })
   }
@@ -358,7 +380,11 @@ function App() {
                   <YAxis yAxisId="right" dataKey="name" type="category" orientation="right" width={140}
                     tick={{ fontSize: 10 }} tickFormatter={(v) => v.length > 22 ? v.slice(0, 22) + '..' : v}
                     axisLine={false} tickLine={false} />
-                                    <Bar yAxisId="right" dataKey="value" fill="#6b9ac4" radius={[3, 3, 3, 3]} barSize={18} />
+                  <Bar yAxisId="right" dataKey="value" radius={[3, 3, 3, 3]} barSize={18}>
+                    {waterSourceData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={getColor(entry.name, '#6b9ac4')} />
+                    ))}
+                  </Bar>
                 </BarChart>
               </ResponsiveContainer>
             ) : (
@@ -377,7 +403,11 @@ function App() {
                   <YAxis yAxisId="right" dataKey="name" type="category" orientation="right" width={140}
                     tick={{ fontSize: 10 }} tickFormatter={(v) => v.length > 22 ? v.slice(0, 22) + '..' : v}
                     axisLine={false} tickLine={false} />
-                                    <Bar yAxisId="right" dataKey="value" fill="#7eb5a6" radius={[3, 3, 3, 3]} barSize={18} />
+                  <Bar yAxisId="right" dataKey="value" radius={[3, 3, 3, 3]} barSize={18}>
+                    {technologyData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={getColor(entry.name, '#7eb5a6')} />
+                    ))}
+                  </Bar>
                 </BarChart>
               </ResponsiveContainer>
             ) : (
@@ -396,7 +426,11 @@ function App() {
                   <YAxis yAxisId="right" dataKey="name" type="category" orientation="right" width={140}
                     tick={{ fontSize: 10 }} tickFormatter={(v) => v.length > 22 ? v.slice(0, 22) + '..' : v}
                     axisLine={false} tickLine={false} />
-                                    <Bar yAxisId="right" dataKey="value" fill="#c4a76b" radius={[3, 3, 3, 3]} barSize={18} />
+                  <Bar yAxisId="right" dataKey="value" radius={[3, 3, 3, 3]} barSize={18}>
+                    {extractionData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={getColor(entry.name, '#c4a76b')} />
+                    ))}
+                  </Bar>
                 </BarChart>
               </ResponsiveContainer>
             ) : (
@@ -415,7 +449,11 @@ function App() {
                   <YAxis yAxisId="right" dataKey="name" type="category" orientation="right" width={140}
                     tick={{ fontSize: 10 }} tickFormatter={(v) => v.length > 22 ? v.slice(0, 22) + '..' : v}
                     axisLine={false} tickLine={false} />
-                                    <Bar yAxisId="right" dataKey="value" fill="#a67eb5" radius={[3, 3, 3, 3]} barSize={18} />
+                  <Bar yAxisId="right" dataKey="value" radius={[3, 3, 3, 3]} barSize={18}>
+                    {ownerData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={getColor(entry.name, '#a67eb5')} />
+                    ))}
+                  </Bar>
                 </BarChart>
               </ResponsiveContainer>
             ) : (
@@ -434,7 +472,7 @@ function App() {
                   <YAxis yAxisId="right" dataKey="name" type="category" orientation="right" width={140}
                     tick={{ fontSize: 10 }} tickFormatter={(v) => v.length > 22 ? v.slice(0, 22) + '..' : v}
                     axisLine={false} tickLine={false} />
-                                    <Bar yAxisId="right" dataKey="value" fill="#b5867e" radius={[3, 3, 3, 3]} barSize={18} />
+                  <Bar yAxisId="right" dataKey="value" fill="#b5867e" radius={[3, 3, 3, 3]} barSize={18} />
                 </BarChart>
               </ResponsiveContainer>
             ) : (
