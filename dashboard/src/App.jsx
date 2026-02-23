@@ -417,8 +417,8 @@ function App() {
             style={{ height: '100%', width: '100%', borderRadius: '8px' }}
           >
             <TileLayer
-              attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-              url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+              attribution='&copy; <a href="https://carto.com/">CARTO</a>'
+              url="https://{s}.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}{r}.png"
             />
             {boundaries && (
               <GeoJSON
@@ -461,6 +461,19 @@ function App() {
                   />
                 ))}
               </React.Fragment>
+            )}
+            {mapMode === 'dotMatrix' && boundaries && (
+              <GeoJSON
+                data={boundaries}
+                style={() => ({
+                  fillColor: 'transparent',
+                  weight: 1.5,
+                  opacity: 0.8,
+                  color: '#475569',
+                  fillOpacity: 0,
+                })}
+                key={`boundaries-overlay-${selectedCounty}-${selectedDistrict}-${dotMatrixIndicator}`}
+              />
             )}
           </MapContainer>
           {mapMode === 'dotMatrix' && dotMatrixLegend.length > 0 && (

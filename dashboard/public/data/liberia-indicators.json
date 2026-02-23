@@ -1,6 +1,6 @@
 {
   "colors": [
-    { "color": "#9CA3AF", "options": ["Other", "Unknown"] },
+    { "color": "#D1D5DB", "options": ["Other", "Unknown"] },
     { "color": "#3B82F6", "options": ["Tube well or borehole", "Government", "Afridev", "NGO"] },
     { "color": "#14B8A6", "options": ["Protected dug well", "CBO", "Kardia"] },
     { "color": "#F97316", "options": ["Unprotected dug well", "Manual"] },
