@@ -1,10 +1,11 @@
-import { useState, useEffect, useMemo, useRef, useCallback } from 'react'
+import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react'
 import { MapContainer, TileLayer, GeoJSON, CircleMarker, Popup } from 'react-leaflet'
 import { feature } from 'topojson-client'
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Cell } from 'recharts'
-import { Droplets, Filter, AlertCircle, RefreshCw, MapPin, Map, ArrowDownCircle } from 'lucide-react'
+import { Droplets, Filter, AlertCircle, RefreshCw, MapPin, Map, ArrowDownCircle, Grid3X3, Circle } from 'lucide-react'
 import { useWaterFacilities } from './hooks'
 import { aggregateByGeography } from './api'
+import { generateDotMatrixForRegions } from './dotMatrix'
 import './App.css'
 
 function App() {
@@ -15,6 +16,8 @@ function App() {
   const [selectedDistrict, setSelectedDistrict] = useState('')
   const [showScrollHint, setShowScrollHint] = useState(true)
   const [colorMap, setColorMap] = useState({})
+  const [mapMode, setMapMode] = useState('markers') // 'markers' or 'dotMatrix'
+  const [dotMatrixIndicator, setDotMatrixIndicator] = useState('waterSource')
   const sidebarRef = useRef(null)
 
   // Handle sidebar scroll to show/hide scroll hint
@@ -147,6 +150,44 @@ function App() {
     return sortWithUnknownLast(data).slice(0, 10)
   }, [filteredData])
 
+  // Dot matrix indicator options
+  const dotMatrixIndicators = [
+    { key: 'waterSource', label: 'Water Source Type' },
+    { key: 'extractionType', label: 'Extraction Type' },
+    { key: 'owner', label: 'Ownership' },
+    { key: 'technologyType', label: 'Technology Type' },
+  ]
+
+  // Generate dot matrix data
+  const dotMatrixData = useMemo(() => {
+    if (mapMode !== 'dotMatrix' || !boundaries || !filteredData || filteredData.length === 0) {
+      return []
+    }
+    return generateDotMatrixForRegions(
+      boundaries,
+      filteredData,
+      dotMatrixIndicator,
+      (name) => getColor(name, '#9CA3AF'),
+      0.012
+    )
+  }, [mapMode, boundaries, filteredData, dotMatrixIndicator, colorMap])
+
+  // Get unique categories for legend
+  const dotMatrixLegend = useMemo(() => {
+    if (mapMode !== 'dotMatrix' || !filteredData || filteredData.length === 0) return []
+    const counts = {}
+    filteredData.forEach(f => {
+      const value = f[dotMatrixIndicator] || 'Unknown'
+      counts[value] = (counts[value] || 0) + 1
+    })
+    return sortWithUnknownLast(
+      Object.entries(counts).map(([name, value]) => ({
+        name,
+        value,
+        color: getColor(name, '#9CA3AF')
+      }))
+    )
+  }, [mapMode, filteredData, dotMatrixIndicator, colorMap])
 
   // Water points with coordinates for map markers
   const mapMarkers = useMemo(() => {
@@ -185,6 +226,17 @@ function App() {
       feature.properties.district === districts.find(d => d.id === parseInt(selectedDistrict))?.name
     const isCountySelected = selectedCounty &&
       feature.properties.county === counties.find(c => c.id === parseInt(selectedCounty))?.name
+
+    // In dot matrix mode, use transparent fill
+    if (mapMode === 'dotMatrix') {
+      return {
+        fillColor: 'transparent',
+        weight: isSelected ? 2 : 1,
+        opacity: 1,
+        color: isSelected ? '#1d4ed8' : '#64748b',
+        fillOpacity: 0,
+      }
+    }
 
     // Color by water point count if we have data
     let fillColor = '#cbd5e1'
@@ -290,6 +342,36 @@ function App() {
           <RefreshCw size={16} className={apiLoading ? 'spinning' : ''} />
         </button>
 
+        <div className="map-mode-toggle">
+          <button
+            className={`mode-btn ${mapMode === 'markers' ? 'active' : ''}`}
+            onClick={() => setMapMode('markers')}
+            title="Show water point markers"
+          >
+            <Circle size={14} />
+            <span>Markers</span>
+          </button>
+          <button
+            className={`mode-btn ${mapMode === 'dotMatrix' ? 'active' : ''}`}
+            onClick={() => setMapMode('dotMatrix')}
+            title="Show dot matrix visualization"
+          >
+            <Grid3X3 size={14} />
+            <span>Dot Matrix</span>
+          </button>
+          {mapMode === 'dotMatrix' && (
+            <select
+              value={dotMatrixIndicator}
+              onChange={(e) => setDotMatrixIndicator(e.target.value)}
+              className="dot-matrix-select"
+            >
+              {dotMatrixIndicators.map(ind => (
+                <option key={ind.key} value={ind.key}>{ind.label}</option>
+              ))}
+            </select>
+          )}
+        </div>
+
         <div className="stats-inline">
           <div className="stat-badge">
             <Droplets size={14} />
@@ -343,14 +425,14 @@ function App() {
                 data={boundaries}
                 style={getDistrictStyle}
                 onEachFeature={onEachDistrict}
-                key={`${selectedCounty}-${selectedDistrict}-${filteredData?.length || 0}`}
+                key={`${selectedCounty}-${selectedDistrict}-${filteredData?.length || 0}-${mapMode}`}
               />
             )}
-            {mapMarkers.map((facility, idx) => (
+            {mapMode === 'markers' && mapMarkers.map((facility, idx) => (
               <CircleMarker
                 key={facility.osid || idx}
                 center={[parseFloat(facility.latitude), parseFloat(facility.longitude)]}
-                radius={4}
+                radius={2}
                 fillColor="#2563eb"
                 color="#1d4ed8"
                 weight={1}
@@ -365,7 +447,36 @@ function App() {
                 </Popup>
               </CircleMarker>
             ))}
+            {mapMode === 'dotMatrix' && (
+              <React.Fragment key={`dots-${dotMatrixIndicator}`}>
+                {dotMatrixData.map((dot, idx) => (
+                  <CircleMarker
+                    key={idx}
+                    center={[dot.coordinates[1], dot.coordinates[0]]}
+                    radius={2}
+                    fillColor={dot.color}
+                    color={dot.color}
+                    weight={0}
+                    fillOpacity={1}
+                  />
+                ))}
+              </React.Fragment>
+            )}
           </MapContainer>
+          {mapMode === 'dotMatrix' && dotMatrixLegend.length > 0 && (
+            <div className="map-legend">
+              <div className="legend-title">
+                {dotMatrixIndicators.find(i => i.key === dotMatrixIndicator)?.label}
+              </div>
+              {dotMatrixLegend.slice(0, 8).map((item) => (
+                <div key={item.name} className="legend-item">
+                  <span className="legend-dot" style={{ backgroundColor: item.color }} />
+                  <span className="legend-label">{item.name}</span>
+                  <span className="legend-value">{item.value.toLocaleString()}</span>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
         <div className="sidebar" ref={sidebarRef} onScroll={handleSidebarScroll}>
