@@ -15,7 +15,6 @@
       "title": "Water Facility",
       "description": "Schema for water facilities",
       "required": [
-        "geoCode",
         "location",
         "waterPointType"
       ],
@@ -26,12 +25,12 @@
         },
         "geoCode": {
           "type": "string",
-          "description": "Unique geographic code identifier"
+          "description": "Auto-generated geohash from coordinates (8 characters, ~19m precision)"
         },
         "location": {
           "type": "object",
           "description": "Administrative location of the facility",
-          "required": ["county", "district", "community"],
+          "required": ["county", "district", "community", "coordinates"],
           "properties": {
             "county": {
               "type": "string",
@@ -48,6 +47,7 @@
             "coordinates": {
               "type": "object",
               "description": "Geographic coordinates",
+              "required": ["lat", "lon"],
               "properties": {
                 "lat": {
                   "type": "number",
@@ -71,19 +71,17 @@
         },
         "waterPointType": {
           "type": "string",
-          "description": "Type of water point",
+          "description": "Type of water point (matches DHIS2 Org Unit Group codes)",
           "enum": [
-            "Protected dug well",
-            "Unprotected dug well",
-            "Tube well or borehole",
-            "Protected spring",
-            "Unprotected spring",
-            "Piped water into dwelling/plot/yard",
-            "Public tap/standpipe",
-            "Unequipped borehole",
-            "Rainwater (harvesting)",
-            "Sand/Sub-surface dam (with well or standpipe)",
-            "Other"
+            "BOREHOLE",
+            "HAND_PUMP",
+            "PROTECTED_WELL",
+            "UNPROTECTED_WELL",
+            "PROTECTED_SPRING",
+            "UNPROTECTED_SPRING",
+            "PIPED_WATER",
+            "RAINWATER_HARVESTING",
+            "OTHER"
           ]
         },
         "waterPointTypeOther": {
@@ -173,6 +171,39 @@
           "type": "string",
           "format": "uri",
           "description": "URL to photo of the water point"
+        },
+        "externalApis": {
+          "type": "array",
+          "description": "External platforms that have data for this facility",
+          "items": {
+            "type": "object",
+            "required": ["platform", "externalId"],
+            "properties": {
+              "platform": {
+                "type": "string",
+                "description": "Platform name (e.g., DHIS2, WaterAid, UNICEF)"
+              },
+              "externalId": {
+                "type": "string",
+                "description": "ID of this facility in the external platform"
+              },
+              "endpoint": {
+                "type": "string",
+                "format": "uri",
+                "description": "API endpoint to fetch detailed data"
+              },
+              "capabilities": {
+                "type": "array",
+                "items": { "type": "string" },
+                "description": "What data this platform provides (e.g., monitoring, maintenance, photos)"
+              },
+              "lastSync": {
+                "type": "string",
+                "format": "date-time",
+                "description": "Last sync timestamp"
+              }
+            }
+          }
         }
       }
     }
@@ -185,10 +216,17 @@
       "geoCode",
       "waterPointType",
       "location.county",
-      "location.district"
+      "location.district",
+      "externalApis.platform",
+      "externalApis.externalId"
     ],
     "uniqueIndexFields": ["wfId"],
     "uniqueIdentifierFields": [
+      {
+        "field": "/geoCode",
+        "idName": "waterfacility.geoCode",
+        "format": "GEOHASH"
+      },
       {
         "field": "/wfId",
         "idName": "waterfacility.wfId",

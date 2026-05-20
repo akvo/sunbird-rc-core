@@ -27,15 +27,12 @@ import java.util.Map;
 /**
  * Custom IIdGenService implementation for WaterFacility entities.
  *
- * Generates deterministic wfId values based on entity attributes:
- * - geoCode
- * - waterPointType
- * - location.county
- * - location.district
- * - location.community
+ * Generates:
+ * 1. geoCode - Geohash from lat/lon coordinates (8 chars, ~19m precision)
+ * 2. wfId - Deterministic ID based on entity attributes
  *
- * Format: WF-<COUNTY_ABBR>-<DISTRICT_ABBR>-<TYPE_CODE>-<HASH>
- * Example: WF-NIM-BUU-TWB-7A91C2
+ * wfId Format: WF-<COUNTY_ABBR>-<DISTRICT_ABBR>-<TYPE_CODE>-<HASH>
+ * Example: WF-NIM-BUU-BH-7A91C2
  *
  * The @Primary annotation ensures this service is used instead of
  * the default IdGenService when both are available.
@@ -55,21 +52,23 @@ public class WaterFacilityIdGenService implements IIdGenService {
     @Autowired
     private ObjectMapper objectMapper;
 
-    // Mapping of water point types to short codes
+    // Mapping of water point types to short codes (matches DHIS2 Org Unit Group codes)
     private static final Map<String, String> WATER_POINT_TYPE_CODES = new HashMap<>();
     static {
-        WATER_POINT_TYPE_CODES.put("Protected dug well", "PDW");
-        WATER_POINT_TYPE_CODES.put("Unprotected dug well", "UDW");
-        WATER_POINT_TYPE_CODES.put("Tube well or borehole", "TWB");
-        WATER_POINT_TYPE_CODES.put("Protected spring", "PS");
-        WATER_POINT_TYPE_CODES.put("Unprotected spring", "US");
-        WATER_POINT_TYPE_CODES.put("Piped water into dwelling/plot/yard", "PWD");
-        WATER_POINT_TYPE_CODES.put("Public tap/standpipe", "PTS");
-        WATER_POINT_TYPE_CODES.put("Unequipped borehole", "UEB");
-        WATER_POINT_TYPE_CODES.put("Rainwater (harvesting)", "RWH");
-        WATER_POINT_TYPE_CODES.put("Sand/Sub-surface dam (with well or standpipe)", "SSD");
-        WATER_POINT_TYPE_CODES.put("Other", "OTH");
+        WATER_POINT_TYPE_CODES.put("BOREHOLE", "BH");
+        WATER_POINT_TYPE_CODES.put("HAND_PUMP", "HP");
+        WATER_POINT_TYPE_CODES.put("PROTECTED_WELL", "PW");
+        WATER_POINT_TYPE_CODES.put("UNPROTECTED_WELL", "UW");
+        WATER_POINT_TYPE_CODES.put("PROTECTED_SPRING", "PS");
+        WATER_POINT_TYPE_CODES.put("UNPROTECTED_SPRING", "US");
+        WATER_POINT_TYPE_CODES.put("PIPED_WATER", "PI");
+        WATER_POINT_TYPE_CODES.put("RAINWATER_HARVESTING", "RW");
+        WATER_POINT_TYPE_CODES.put("OTHER", "OT");
     }
+
+    // Geohash Base32 alphabet
+    private static final String GEOHASH_BASE32 = "0123456789bcdefghjkmnpqrstuvwxyz";
+    private static final int GEOHASH_PRECISION = 8; // ~19m precision
 
     @Override
     public Map<String, String> generateId(List<UniqueIdentifierField> uniqueIdentifierFields) throws CustomException {
@@ -90,14 +89,26 @@ public class WaterFacilityIdGenService implements IIdGenService {
             return resultMap;
         }
 
-        logger.info("Generating wfId for WaterFacility entity");
+        logger.info("Generating geoCode and wfId for WaterFacility entity");
 
         // Extract required fields from entity data
-        String geoCode = getFieldValue(entityData, "geoCode");
         String waterPointType = getFieldValue(entityData, "waterPointType");
         String county = getNestedFieldValue(entityData, "location", "county");
         String district = getNestedFieldValue(entityData, "location", "district");
         String community = getNestedFieldValue(entityData, "location", "community");
+
+        // Get coordinates for geohash generation
+        Double lat = getCoordinate(entityData, "lat");
+        Double lon = getCoordinate(entityData, "lon");
+
+        // Generate geoCode from coordinates if not provided
+        String geoCode = getFieldValue(entityData, "geoCode");
+        if (geoCode.isEmpty() && lat != null && lon != null) {
+            geoCode = generateGeohash(lat, lon, GEOHASH_PRECISION);
+            logger.info("Generated geoCode from coordinates: {}", geoCode);
+        } else if (geoCode.isEmpty()) {
+            throw new GenerateException("Cannot generate geoCode: coordinates (lat/lon) are required");
+        }
 
         // Generate the wfId
         String wfId = generateWaterFacilityId(geoCode, waterPointType, county, district, community);
@@ -106,21 +117,88 @@ public class WaterFacilityIdGenService implements IIdGenService {
         if (checkDuplicateExists(wfId)) {
             logger.error("Duplicate WaterFacility detected. wfId {} already exists.", wfId);
             throw new GenerateException("Duplicate WaterFacility: A water point with wfId '" + wfId +
-                "' already exists. Water points with the same geoCode, type, and location are not allowed.");
+                "' already exists. Water points with the same coordinates, type, and location are not allowed.");
         }
 
-        // Find the wfId field in uniqueIdentifierFields and map the generated ID
-        // Field path must match schema config (e.g., "/wfId" for root-level fields)
+        // Map generated IDs to their field paths
         for (UniqueIdentifierField field : uniqueIdentifierFields) {
             String fieldName = field.getField();
-            if ("/wfId".equals(fieldName) || "wfId".equals(fieldName)) {
+            if ("/geoCode".equals(fieldName) || "geoCode".equals(fieldName)) {
+                resultMap.put(fieldName, geoCode);
+                logger.info("Generated geoCode: {}", geoCode);
+            } else if ("/wfId".equals(fieldName) || "wfId".equals(fieldName)) {
                 resultMap.put(fieldName, wfId);
                 logger.info("Generated wfId: {}", wfId);
-                break;
             }
         }
 
         return resultMap;
+    }
+
+    /**
+     * Get coordinate value from location.coordinates.
+     */
+    private Double getCoordinate(JsonNode entityData, String coordName) {
+        JsonNode location = entityData.get("location");
+        if (location != null && !location.isNull()) {
+            JsonNode coordinates = location.get("coordinates");
+            if (coordinates != null && !coordinates.isNull()) {
+                JsonNode coord = coordinates.get(coordName);
+                if (coord != null && !coord.isNull() && coord.isNumber()) {
+                    return coord.asDouble();
+                }
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Generate a geohash string from latitude and longitude.
+     *
+     * @param lat Latitude (-90 to 90)
+     * @param lon Longitude (-180 to 180)
+     * @param precision Number of characters (8 chars = ~19m precision)
+     * @return Geohash string
+     */
+    private String generateGeohash(double lat, double lon, int precision) {
+        double minLat = -90.0, maxLat = 90.0;
+        double minLon = -180.0, maxLon = 180.0;
+
+        StringBuilder geohash = new StringBuilder();
+        boolean isLon = true;
+        int bit = 0;
+        int ch = 0;
+
+        while (geohash.length() < precision) {
+            if (isLon) {
+                double mid = (minLon + maxLon) / 2;
+                if (lon >= mid) {
+                    ch |= (1 << (4 - bit));
+                    minLon = mid;
+                } else {
+                    maxLon = mid;
+                }
+            } else {
+                double mid = (minLat + maxLat) / 2;
+                if (lat >= mid) {
+                    ch |= (1 << (4 - bit));
+                    minLat = mid;
+                } else {
+                    maxLat = mid;
+                }
+            }
+
+            isLon = !isLon;
+            bit++;
+
+            if (bit == 5) {
+                geohash.append(GEOHASH_BASE32.charAt(ch));
+                bit = 0;
+                ch = 0;
+            }
+        }
+
+        return geohash.toString();
     }
 
     /**

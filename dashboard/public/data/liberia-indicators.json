@@ -1,16 +1,15 @@
 {
   "colors": [
-    { "color": "#D1D5DB", "options": ["Other", "Unknown"] },
-    { "color": "#3B82F6", "options": ["Tube well or borehole", "Government", "Afridev", "NGO"] },
-    { "color": "#14B8A6", "options": ["Protected dug well", "CBO", "Kardia"] },
-    { "color": "#F97316", "options": ["Unprotected dug well", "Manual"] },
-    { "color": "#22C55E", "options": ["Protected spring", "Community", "India Mark"] },
-    { "color": "#EF4444", "options": ["Unprotected spring", "Health Facility"] },
-    { "color": "#06B6D4", "options": ["Public tap/standpipe"] },
-    { "color": "#6366F1", "options": ["Piped water into dwelling/plot/yard", "Consallen", "Other institution"] },
-    { "color": "#0EA5E9", "options": ["Rainwater (harvesting)"] },
-    { "color": "#A16207", "options": ["Sand/Sub-surface dam (with well or standpipe)", "Rope pump"] },
-    { "color": "#FBBF24", "options": ["Unequipped borehole"] },
+    { "color": "#D1D5DB", "options": ["OTHER", "Other", "Unknown"] },
+    { "color": "#3B82F6", "options": ["BOREHOLE", "Government", "Afridev", "NGO"] },
+    { "color": "#14B8A6", "options": ["PROTECTED_WELL", "CBO", "Kardia"] },
+    { "color": "#F97316", "options": ["UNPROTECTED_WELL", "Manual"] },
+    { "color": "#22C55E", "options": ["PROTECTED_SPRING", "Community", "India Mark"] },
+    { "color": "#EF4444", "options": ["UNPROTECTED_SPRING", "Health Facility"] },
+    { "color": "#06B6D4", "options": ["HAND_PUMP"] },
+    { "color": "#6366F1", "options": ["PIPED_WATER", "Consallen", "Other institution"] },
+    { "color": "#0EA5E9", "options": ["RAINWATER_HARVESTING"] },
+    { "color": "#A16207", "options": ["Rope pump"] },
     { "color": "#EAB308", "options": ["Electrical", "School"] },
     { "color": "#F59E0B", "options": ["Solar"] },
     { "color": "#8B5CF6", "options": ["Vergnet", "Private Individual", "Private"] }
@@ -83,17 +82,15 @@
       "filterable": true,
       "aggregatable": true,
       "options": [
-        "Tube well or borehole",
-        "Protected dug well",
-        "Unprotected dug well",
-        "Protected spring",
-        "Unprotected spring",
-        "Public tap/standpipe",
-        "Piped water into dwelling/plot/yard",
-        "Rainwater (harvesting)",
-        "Sand/Sub-surface dam (with well or standpipe)",
-        "Unequipped borehole",
-        "Other"
+        "BOREHOLE",
+        "HAND_PUMP",
+        "PROTECTED_WELL",
+        "UNPROTECTED_WELL",
+        "PROTECTED_SPRING",
+        "UNPROTECTED_SPRING",
+        "PIPED_WATER",
+        "RAINWATER_HARVESTING",
+        "OTHER"
       ]
     },
     {
